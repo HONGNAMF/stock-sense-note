@@ -16,7 +16,7 @@ export default function TradesPage() {
     price: "",
     quantity: "",
     reason: "",
-    emotion: "기록용",
+    emotion: "기록 중",
     heartRating: 2,
     riskJudgement: "중간",
     aiOneLine: "참고용 해석 기준으로 매수 이유가 유지되는지 나중에 복기합니다."
@@ -53,13 +53,13 @@ export default function TradesPage() {
       <section className="mt-7">
         <h2 className="text-xl font-black">최근 기록</h2>
         <div className="mt-3 grid gap-3">
-          {trades.map((trade) => (
+          {trades.length ? trades.map((trade) => (
             <article key={trade.id} className="rounded-3xl bg-white p-4 shadow-sm">
               <p className="text-sm font-black text-black/45">{trade.tradeDate} · {trade.tradeType}</p>
               <h3 className="mt-1 text-lg font-black">{trade.assetName}</h3>
               <p className="mt-2 text-sm font-semibold leading-6 text-black/62">{trade.reason || "이유를 기록하지 않았습니다."}</p>
             </article>
-          ))}
+          )) : <div className="rounded-3xl bg-white p-5 text-sm font-semibold text-black/55 shadow-sm">아직 매수/매도 기록이 없습니다.</div>}
         </div>
       </section>
     </AppShell>
@@ -70,7 +70,7 @@ function Input({ label, value, onChange, type = "text" }: { label: string; value
   return (
     <label>
       <span className="text-sm font-black text-black/55">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 h-11 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
+      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
     </label>
   );
 }

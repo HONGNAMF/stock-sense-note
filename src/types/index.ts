@@ -3,16 +3,7 @@ export type Volatility = "낮음" | "중간" | "높음";
 export type Horizon = "단기" | "중기" | "장기";
 export type NewsFrequency = "거의 안 봄" | "가끔" | "자주";
 export type LossTolerance = "-5%" | "-10%" | "-20%" | "상관없음";
-export type Interest =
-  | "음악"
-  | "영화"
-  | "애니"
-  | "게임"
-  | "콘텐츠"
-  | "커뮤니티"
-  | "AI"
-  | "의료"
-  | "기타";
+export type Interest = "음악" | "영화" | "애니" | "게임" | "콘텐츠" | "커뮤니티" | "AI" | "의료" | "기타";
 
 export type UserProfile = {
   name: string;

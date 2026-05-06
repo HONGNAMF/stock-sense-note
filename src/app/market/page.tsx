@@ -26,33 +26,19 @@ export default function MarketPage() {
   return (
     <AppShell>
       <header>
-        <p className="text-sm font-bold text-black/50">시장 피드</p>
-        <h1 className="mt-1 text-3xl font-black text-ink">유명 종목 100개 한눈에</h1>
+        <p className="text-sm font-bold text-black/50">월간 시장 피드</p>
+        <h1 className="mt-1 text-3xl font-black text-ink">최근 유명한 종목 100개 한눈에 보기</h1>
         <p className="mt-2 text-sm font-semibold leading-6 text-black/55">{popularStockUpdateGuide}</p>
       </header>
 
       <label className="mt-5 flex h-14 items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 shadow-soft">
         <Search size={20} className="text-black/45" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="삼성전자, 바이오, 방산..."
-          className="h-full flex-1 bg-transparent font-bold outline-none"
-        />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="삼성전자, 바이오, 방산..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
         {sectors.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setSector(item)}
-            className={
-              item === sector
-                ? "shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-black text-white"
-                : "shrink-0 rounded-full bg-white px-4 py-2 text-sm font-black text-black/55 shadow-sm"
-            }
-          >
+          <button key={item} type="button" onClick={() => setSector(item)} className={item === sector ? "shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-black text-white" : "shrink-0 rounded-full bg-white px-4 py-2 text-sm font-black text-black/55 shadow-sm"}>
             {item}
           </button>
         ))}

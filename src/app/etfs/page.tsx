@@ -10,7 +10,7 @@ export default function EtfListPage() {
     <AppShell>
       <header>
         <p className="text-sm font-bold text-black/50">ETF</p>
-        <h1 className="mt-1 text-3xl font-black text-ink">ETF를 쉽게 풀어보기</h1>
+        <h1 className="mt-1 text-3xl font-black text-ink">ETF를 쉽게 뜯어보기</h1>
         <p className="mt-2 text-sm font-semibold leading-6 text-black/55">구성 종목, 섹터 비중, 리스크를 쉬운 말로 봅니다.</p>
       </header>
 

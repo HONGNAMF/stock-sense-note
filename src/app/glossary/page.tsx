@@ -28,7 +28,7 @@ export default function GlossaryPage() {
       </header>
       <label className="mt-5 flex h-14 items-center gap-3 rounded-2xl bg-white px-4 shadow-soft">
         <Search size={20} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="PER, ETF, 영업이익..." className="h-full flex-1 bg-transparent font-bold outline-none" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="PER, ETF, 영업이익..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
       {recent.length ? <p className="mt-3 text-sm font-bold text-black/45">최근 검색: {recent.join(", ")}</p> : null}
       <div className="mt-5 grid gap-3">

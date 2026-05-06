@@ -1,4 +1,4 @@
-export type ViewMode = "한눈에 보기" | "기본 보기" | "상세 보기";
+export type ViewMode = "simple" | "standard" | "detailed";
 export type RiskLevel = "낮음" | "중간" | "높음";
 export type HeartRating = 1 | 2 | 3;
 export type AssetKind = "stock" | "etf";
@@ -11,6 +11,8 @@ export type LocalProfile = {
   interests: string[];
   watchSymbols: string[];
   investorSummary?: string;
+  viewMode: ViewMode;
+  onboardingCompleted: boolean;
   createdAt: string;
   updatedAt: string;
 };

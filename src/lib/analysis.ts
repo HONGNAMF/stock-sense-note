@@ -12,12 +12,12 @@ export function classifyProfile(input: Omit<UserProfile, "riskProfile">): RiskPr
 }
 
 export function profileGuide(profile?: RiskProfile) {
-  if (!profile) return "먼저 온보딩을 마치면 관심사와 손실 허용 범위에 맞춘 해석을 보여드려요.";
+  if (!profile) return "이름과 생년월일로 투자노트를 만들면 관심사와 기록에 맞춘 해석을 보여드려요.";
   const guides: Record<RiskProfile, string> = {
-    안정형: "가격 변동보다 실적 안정성과 긴 호흡을 우선해 볼 만해요.",
+    안정형: "가격 변동보다 실적 안정성과 긴 흐름을 우선해 볼 만해요.",
     성장형: "성장률과 장기 시장 크기를 보되, 과열 신호를 함께 체크해요.",
     테마형: "뉴스와 산업 변화에 민감하므로 기대감과 실제 실적을 구분해서 봐요.",
-    취향형: "좋아하는 분야를 이해의 입구로 삼되, 숫자가 따라오는지 확인해요."
+    취향형: "좋아하는 분야를 이해의 입구로 쓰되, 숫자가 따라오는지 확인해요."
   };
   return guides[profile];
 }

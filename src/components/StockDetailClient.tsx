@@ -75,18 +75,17 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
       <section className="mt-6 rounded-3xl bg-white p-5 shadow-soft">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-black/45">현재가</p>
+            <p className="text-sm font-black text-black/45">MVP 예시 현재가</p>
             <p className="mt-1 text-3xl font-black">{stock.currentPrice}</p>
           </div>
           <p className={stock.changeRate >= 0 ? "text-xl font-black text-emerald-600" : "text-xl font-black text-red-500"}>
+            <span className="mr-1 text-xs text-black/45">예시 등락률</span>
             {stock.changeRate >= 0 ? "+" : ""}
             {stock.changeRate}%
           </p>
         </div>
         <div className="mt-4">
-          <Badge tone={stock.aiBadge === "과열 상태" ? "coral" : stock.aiBadge === "관망 구간" ? "yellow" : "green"}>
-            AI 판단: {stock.aiBadge}
-          </Badge>
+          <Badge tone={stock.aiBadge === "과열 상태" ? "coral" : stock.aiBadge === "관망 구간" ? "yellow" : "green"}>AI 판단: {stock.aiBadge}</Badge>
         </div>
         <p className="mt-3 text-sm font-semibold leading-6 text-black/60">{stock.oneLine}</p>
         <div className="mt-4 grid gap-3">
@@ -104,7 +103,7 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
         </div>
       </section>
 
-      <Section title="기본 지표" sub="PER, PBR, EPS, ROE는 눌러서 쉬운 설명을 볼 수 있어요.">
+      <Section title="기본 지표" sub="PER, PBR, EPS, ROE는 [?]를 누르면 쉬운 설명을 볼 수 있어요.">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Metric title="시가총액" value={stock.marketCap} />
           <TermButton term="PER" value={stock.per} />
@@ -117,7 +116,7 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
         </div>
       </Section>
 
-      <Section title="10년 흐름" sub="표와 그래프는 필요할 때만 열어서 빠르게 볼 수 있게 했습니다.">
+      <Section title="10년 흐름" sub="MVP에서는 예시 그래프와 표로 흐름을 먼저 이해하게 합니다.">
         <div className="rounded-3xl bg-white p-4 shadow-soft">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="blue">{historical.sector}</Badge>
@@ -126,7 +125,7 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
           <p className="mt-3 text-xs font-bold leading-5 text-black/45">{historical.sourceGuide}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button type="button" onClick={() => setHistoryOpen((next) => !next)} className="h-12 rounded-2xl bg-ink text-sm font-black text-white">
-              {historyOpen ? "표 닫기" : "10년 표 보기"}
+              {historyOpen ? "10년 표 닫기" : "10년 표 보기"}
             </button>
             <button type="button" onClick={() => setGraphOpen((next) => !next)} className="h-12 rounded-2xl bg-skysoft text-sm font-black text-sky-950">
               {graphOpen ? "그래프 닫기" : "그래프 표시"}
@@ -156,27 +155,14 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
         <div className="space-y-3">
           {analysisLabels.map(([key, label]) => (
             <article key={key} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setOpenAnalysisKey((current) => (current === key ? null : key))}
-                className="w-full text-left"
-              >
+              <button type="button" onClick={() => setOpenAnalysisKey((current) => (current === key ? null : key))} className="w-full text-left">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-black text-black/48">{label}</h3>
-                  <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-xs font-black text-black/50">
-                    {openAnalysisKey === key ? "근거 닫기" : "근거 보기"}
-                  </span>
+                  <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-xs font-black text-black/50">{openAnalysisKey === key ? "근거 닫기" : "근거 보기"}</span>
                 </div>
                 <p className="mt-2 text-base font-semibold leading-7 text-black/72">{stock.analysis[key]}</p>
               </button>
-              {openAnalysisKey === key ? (
-                <AnalysisEvidence
-                  ticker={stock.ticker}
-                  analysisKey={key}
-                  label={label}
-                  isBuyNow={key === "buyNow"}
-                />
-              ) : null}
+              {openAnalysisKey === key ? <AnalysisEvidence ticker={stock.ticker} analysisKey={key} isBuyNow={key === "buyNow"} /> : null}
             </article>
           ))}
         </div>
@@ -260,38 +246,22 @@ function EvidenceButton({ link }: { link: { title: string; summary: string; url:
   );
 }
 
-function AnalysisEvidence({
-  ticker,
-  analysisKey,
-  label,
-  isBuyNow
-}: {
-  ticker: string;
-  analysisKey: string;
-  label: string;
-  isBuyNow?: boolean;
-}) {
+function AnalysisEvidence({ ticker, analysisKey, isBuyNow }: { ticker: string; analysisKey: string; isBuyNow?: boolean }) {
   const links = getAnalysisEvidence(ticker, analysisKey);
 
   return (
     <div className="mt-4 rounded-2xl bg-paper p-3">
       <p className="text-xs font-black text-black/45">왜 이렇게 판단했나요?</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-black/62">
-        이 항목은 최신 뉴스, 공식 공시, 시세 흐름을 함께 확인해서 해석하는 자리입니다. 지금 MVP에서는 검증 가능한 링크와 자체 요약을 붙여두고,
-        실제 API 연결 후에는 관련 뉴스가 자동으로 갱신됩니다.
-      </p>
+      <p className="mt-1 text-sm font-semibold leading-6 text-black/62">이 항목은 최근 뉴스, 공식 공시, 시세 흐름을 함께 확인해서 참고용으로 해석하는 구조입니다. MVP에서는 검증 가능한 링크와 자체 요약을 붙여두었습니다.</p>
       {isBuyNow ? (
         <div className="mt-3 rounded-2xl bg-lemon/70 p-3">
           <p className="text-sm font-black text-yellow-950">지금 사도 되는지 판단 기준</p>
-          <p className="mt-1 text-sm font-semibold leading-6 text-yellow-950/80">
-            현재 가격이 이미 기대를 반영했는지, 최근 실적과 공시가 기대를 뒷받침하는지, 단기 급등 후 차익실현 위험이 있는지를 같이 봅니다.
-            그래서 확정 매수 표현 대신 “분할 접근/관망/확인 후 판단”처럼 보수적으로 표시합니다.
-          </p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-yellow-950/80">현재 가격이 기대를 이미 반영했는지, 실적과 공시가 기대를 뒷받침하는지, 단기 급등 뒤 차익실현 위험이 있는지를 함께 봅니다. 확정 매수 표현 대신 분할 접근, 관망, 확인 같은 보수적 표현을 씁니다.</p>
         </div>
       ) : null}
       <div className="mt-3 space-y-2">
         {links.map((link) => (
-          <EvidenceButton key={`${label}-${link.url}`} link={link} />
+          <EvidenceButton key={link.url} link={link} />
         ))}
       </div>
     </div>
@@ -320,7 +290,7 @@ function HistoryGraph({ rows }: { rows: Array<{ year: number; marketCap: string;
           );
         })}
       </div>
-      <p className="mt-3 text-xs font-bold text-black/45">막대는 10년 시가총액 흐름을 단순화한 표시입니다.</p>
+      <p className="mt-3 text-xs font-bold text-black/45">막대는 10년 시가총액 흐름을 단순화한 예시입니다.</p>
     </div>
   );
 }

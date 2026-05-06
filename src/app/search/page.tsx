@@ -12,9 +12,7 @@ export default function SearchPage() {
   const result = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return stocks;
-    return stocks.filter((stock) =>
-      [stock.name, stock.ticker, stock.category, ...stock.interests].some((item) => item.toLowerCase().includes(normalized))
-    );
+    return stocks.filter((stock) => [stock.name, stock.ticker, stock.category, ...stock.interests].some((item) => item.toLowerCase().includes(normalized)));
   }, [query]);
 
   return (
@@ -37,12 +35,7 @@ export default function SearchPage() {
 
       <label className="mt-5 flex h-14 items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 shadow-soft">
         <Search size={20} className="text-black/45" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Spotify, PINS, 애니플러스..."
-          className="h-full flex-1 bg-transparent font-bold outline-none"
-        />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="삼성전자, Spotify, 애니플러스..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">

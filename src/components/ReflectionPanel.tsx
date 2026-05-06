@@ -39,7 +39,7 @@ export function ReflectionPanel({ assetKey, assetKind }: { assetKey: string; ass
           <div className="mt-2 flex gap-2">
             {[1, 2, 3].map((value) => (
               <button key={value} onClick={() => setRecord({ ...record, heartRating: value as HeartRating })} className={record.heartRating === value ? "rounded-2xl bg-coral px-4 py-2 font-black" : "rounded-2xl bg-paper px-4 py-2 font-black"}>
-                {"❤️".repeat(value)}
+                {"♥".repeat(value)}
               </button>
             ))}
           </div>

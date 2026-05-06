@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
@@ -29,7 +30,7 @@ export default function WatchlistPage() {
     <AppShell>
       <header>
         <p className="text-sm font-bold text-black/50">관심종목</p>
-        <h1 className="mt-1 text-3xl font-black text-ink">하트 누른 종목</h1>
+        <h1 className="mt-1 text-3xl font-black text-ink">하트를 누른 종목</h1>
         <p className="mt-2 text-sm font-semibold text-black/55">{list.length}개 저장됨</p>
       </header>
 
@@ -60,8 +61,16 @@ export default function WatchlistPage() {
         </div>
       ) : (
         <div className="mt-6 rounded-3xl bg-white p-6 text-center shadow-soft">
-          <p className="text-lg font-black">아직 저장된 종목이 없어요</p>
-          <p className="mt-2 text-sm font-semibold leading-6 text-black/55">종목 상세 페이지에서 하트를 누르면 여기에 모입니다.</p>
+          <p className="text-lg font-black">아직 관심종목이 없어요.</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-black/55">종목 상세에서 하트를 누르면 여기에 모입니다.</p>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <Link href="/market" className="rounded-2xl bg-ink px-4 py-3 text-sm font-black text-white">
+              종목 둘러보기
+            </Link>
+            <Link href="/etfs" className="rounded-2xl bg-black/[0.06] px-4 py-3 text-sm font-black text-black/65">
+              ETF 둘러보기
+            </Link>
+          </div>
         </div>
       )}
     </AppShell>

@@ -10,7 +10,7 @@ export default function NewsPage() {
       <header>
         <p className="text-sm font-bold text-black/50">뉴스</p>
         <h1 className="mt-1 text-3xl font-black text-ink">3줄로 먼저 읽기</h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">실제 뉴스 API 연결 전까지 mock 기사로 동작합니다. 기사 전문은 복제하지 않고 출처 링크와 자체 요약만 표시하는 구조입니다.</p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">실제 뉴스 API 연결 전까지 mock 기사로 동작합니다. 기사 원문은 복제하지 않고 출처 링크와 자체 요약만 표시합니다.</p>
       </header>
 
       <div className="mt-5 space-y-3">
