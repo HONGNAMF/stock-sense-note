@@ -1,0 +1,88 @@
+export type YearlyMetric = {
+  year: number;
+  marketCap: string;
+  revenue: string;
+  operatingProfit: string;
+  per: string;
+  pbr: string;
+  roe: string;
+  note: string;
+};
+
+export type VolatilityEvent = {
+  period: string;
+  title: string;
+  explanation: string;
+  impact: "상승" | "하락" | "혼조";
+};
+
+const profiles: Record<string, { baseCap: number; sector: string; events: VolatilityEvent[] }> = {
+  "005930.KS": {
+    baseCap: 310,
+    sector: "반도체 대형주",
+    events: [
+      { period: "2018-2019", title: "메모리 다운사이클", explanation: "DRAM 가격 하락으로 이익 전망이 낮아지며 주가가 눌렸습니다.", impact: "하락" },
+      { period: "2020-2021", title: "비대면 수요와 유동성", explanation: "IT 기기 수요와 풍부한 유동성이 반도체 대형주를 밀어 올렸습니다.", impact: "상승" },
+      { period: "2022", title: "금리 인상과 업황 둔화", explanation: "금리 상승과 재고 부담이 겹치며 밸류에이션이 낮아졌습니다.", impact: "하락" },
+      { period: "2024-2026", title: "AI 메모리 기대", explanation: "HBM과 AI 서버 수요가 회복 논리를 만들었지만 경쟁력 확인이 필요합니다.", impact: "상승" }
+    ]
+  },
+  "000660.KS": {
+    baseCap: 95,
+    sector: "HBM 대표주",
+    events: [
+      { period: "2018-2019", title: "메모리 가격 하락", explanation: "업황 둔화로 실적과 주가가 함께 약해졌습니다.", impact: "하락" },
+      { period: "2020-2021", title: "서버 수요 회복", explanation: "데이터센터 수요가 살아나며 기대가 커졌습니다.", impact: "상승" },
+      { period: "2022-2023", title: "적자와 재고 조정", explanation: "메모리 재고 조정이 깊어지며 실적 부담이 컸습니다.", impact: "하락" },
+      { period: "2024-2026", title: "HBM 프리미엄", explanation: "AI 가속기용 HBM 수요가 부각되며 시장의 중심 종목이 됐습니다.", impact: "상승" }
+    ]
+  },
+  "000250.KQ": {
+    baseCap: 1.4,
+    sector: "고변동성 바이오",
+    events: [
+      { period: "2018-2020", title: "바이오 기대 형성", explanation: "플랫폼 기술과 신약 기대가 주가 변동을 키웠습니다.", impact: "혼조" },
+      { period: "2021-2022", title: "금리 상승과 성장주 조정", explanation: "바이오 성장주 전반의 할인율 부담이 커졌습니다.", impact: "하락" },
+      { period: "2023-2025", title: "계약·기술 기대 재부각", explanation: "기술 이전과 임상 기대가 강해지며 급등락이 반복됐습니다.", impact: "상승" },
+      { period: "2026", title: "신뢰도 논란과 급락", explanation: "특허·IR·블록딜 논란처럼 검증 이슈가 변동성을 크게 키웠습니다.", impact: "하락" }
+    ]
+  }
+};
+
+const defaultEvents: VolatilityEvent[] = [
+  { period: "2018-2020", title: "업황 변화", explanation: "산업 사이클과 금리 환경에 따라 실적 기대가 바뀌었습니다.", impact: "혼조" },
+  { period: "2021-2022", title: "금리와 성장주 조정", explanation: "금리 상승으로 미래 성장 기대의 현재 가치가 낮아졌습니다.", impact: "하락" },
+  { period: "2023-2024", title: "실적 확인 구간", explanation: "기대감보다 실제 매출과 이익 개선 여부가 중요해졌습니다.", impact: "혼조" },
+  { period: "2025-2026", title: "테마 재평가", explanation: "AI, 인프라, 로봇, 바이오 등 섹터별 순환매가 주가 변동을 만들었습니다.", impact: "상승" }
+];
+
+export function getHistoricalProfile(ticker: string) {
+  const profile = profiles[ticker] ?? { baseCap: 2.5, sector: "관찰 종목", events: defaultEvents };
+  const startYear = 2017;
+
+  const metrics: YearlyMetric[] = Array.from({ length: 10 }, (_, index) => {
+    const year = startYear + index;
+    const cycle = Math.sin(index / 1.7) * 0.18 + index * 0.085;
+    const cap = profile.baseCap * Math.max(0.35, 1 + cycle);
+    const revenue = cap * (0.32 + (index % 3) * 0.035);
+    const profit = revenue * (0.08 + (index % 4) * 0.018);
+
+    return {
+      year,
+      marketCap: `${cap.toFixed(profile.baseCap > 20 ? 0 : 1)}조원`,
+      revenue: `${revenue.toFixed(profile.baseCap > 20 ? 0 : 1)}조원`,
+      operatingProfit: `${profit.toFixed(profile.baseCap > 20 ? 1 : 2)}조원`,
+      per: index % 4 === 0 ? "높음" : `${(9 + index * 2.1).toFixed(1)}`,
+      pbr: `${(0.8 + index * 0.18).toFixed(1)}`,
+      roe: `${(6 + index * 1.4).toFixed(1)}%`,
+      note: index < 3 ? "업황 확인" : index < 6 ? "금리·실적 변수" : "테마·실적 재평가"
+    };
+  });
+
+  return {
+    sector: profile.sector,
+    sourceGuide: "현재는 MVP용 추정 mock입니다. 실서비스에서는 DART 재무제표, KRX 시가총액, FnGuide/Quantiwise 같은 라이선스 데이터로 교체해야 합니다.",
+    metrics,
+    events: profile.events
+  };
+}
