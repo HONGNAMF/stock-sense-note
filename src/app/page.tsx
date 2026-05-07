@@ -42,23 +42,40 @@ export default function HomePage() {
     setLoginState("idle");
   }
 
+  function browseOnly() {
+    const now = new Date().toISOString();
+    setLocalProfile({
+      localUserId: "guest-browse",
+      name: "둘러보기",
+      interests: [],
+      watchSymbols: [],
+      investorSummary: "로그인 없이 둘러보는 중입니다.",
+      viewMode: "standard",
+      onboardingCompleted: false,
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+
   if (!localProfile) {
     return (
       <AppShell>
         <section className="rounded-3xl bg-ink p-6 text-white shadow-soft">
           <p className="text-sm font-bold text-white/55">해석노트</p>
-          <h1 className="mt-2 text-4xl font-black">내 투자노트 로그인</h1>
-          <p className="mt-3 text-sm font-semibold leading-6 text-white/72">닉네임으로 이 기기에 저장된 투자노트를 불러옵니다.</p>
+          <h1 className="mt-2 text-4xl font-black">투자노트 둘러보기</h1>
+          <p className="mt-3 text-sm font-semibold leading-6 text-white/72">회원가입 없이 먼저 둘러보고, 기록이 필요할 때 닉네임으로 투자노트를 만들 수 있어요.</p>
         </section>
 
         <section className="mt-5 space-y-4 rounded-3xl bg-white p-5 shadow-soft">
+          <button onClick={browseOnly} className="h-12 w-full rounded-2xl bg-ink text-sm font-black text-white">둘러보기 시작</button>
+          <div className="h-px bg-black/[0.06]" />
           <label className="block">
             <span className="text-sm font-black text-black/55">닉네임</span>
             <input value={loginName} onChange={(event) => setLoginName(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
           </label>
-          <button onClick={login} className="h-12 w-full rounded-2xl bg-ink text-sm font-black text-white">로그인하기</button>
+          <button onClick={login} className="h-12 w-full rounded-2xl bg-black/[0.08] text-sm font-black text-black/70">내 투자노트 불러오기</button>
           <Link href="/onboarding" className="block h-12 rounded-2xl bg-black/[0.06] pt-3 text-center text-sm font-black text-black/70">처음이라면 회원가입</Link>
-          <p className="text-xs font-bold leading-5 text-black/45">현재 버전은 개인용 저장 방식입니다. 입력한 정보와 기록은 이 기기에 저장됩니다.</p>
+          <p className="text-xs font-bold leading-5 text-black/45">둘러보기는 기록을 만들지 않아도 사용할 수 있어요. 닉네임 투자노트는 이 기기에만 저장됩니다.</p>
         </section>
 
         {loginState === "not-found" ? (
@@ -73,8 +90,8 @@ export default function HomePage() {
         ) : null}
 
         <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">
-          <h2 className="text-xl font-black">닉네임만 입력하면 나만의 투자노트를 만들 수 있어요.</h2>
-          <Link href="/onboarding" className="mt-4 block h-12 rounded-2xl bg-ink pt-3 text-center text-sm font-black text-white">내 투자노트 만들기</Link>
+          <h2 className="text-xl font-black">먼저 둘러보고, 마음에 들면 내 기록을 시작하세요.</h2>
+          <Link href="/onboarding" className="mt-4 block h-12 rounded-2xl bg-ink pt-3 text-center text-sm font-black text-white">닉네임으로 투자노트 만들기</Link>
         </section>
       </AppShell>
     );
@@ -92,7 +109,7 @@ export default function HomePage() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-black/50">해석노트</p>
-          <h1 className="mt-1 text-3xl font-black tracking-normal text-ink">회사를 이해하고, 내 판단을 기록하는 투자노트</h1>
+          <h1 className="mt-1 text-3xl font-black tracking-normal text-ink">{localProfile.localUserId === "guest-browse" ? "주식과 ETF를 쉽게 둘러보는 투자노트" : "회사를 이해하고, 내 판단을 기록하는 투자노트"}</h1>
           <p className="mt-2 text-sm font-semibold leading-6 text-black/55">최근 30일 흐름, 회사 해석, ETF 구성, 내 매수·매도 기록을 한곳에서 정리해요.</p>
         </div>
         <div className="grid size-12 place-items-center rounded-full bg-ink text-lg font-black text-white">
