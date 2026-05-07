@@ -63,7 +63,9 @@ async function fetchYahooQuote(symbol: string) {
   if (!response.ok) return null;
   const data = (await response.json()) as YahooChartResponse;
   const meta = data.chart?.result?.[0]?.meta;
-  const price = meta?.regularMarketPrice;
+  if (!meta) return null;
+
+  const price = meta.regularMarketPrice;
   if (typeof price !== "number" || Number.isNaN(price)) return null;
 
   const previousClose = meta.previousClose ?? meta.chartPreviousClose;
