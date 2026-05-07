@@ -103,7 +103,18 @@ export default function ProfilePage() {
             <Info label="저장 방식" value="현재 버전은 이 기기에 저장됩니다." />
           </div>
         ) : (
-          <p className="font-semibold leading-7 text-black/60">닉네임으로 이 기기에 저장된 투자노트를 불러올 수 있어요.</p>
+          <div className="space-y-4">
+            <div className="grid size-20 place-items-center rounded-full bg-ink text-2xl font-black text-white">S</div>
+            <div>
+              <h2 className="text-xl font-black">프로필 사진은 투자노트를 만든 뒤 바꿀 수 있어요.</h2>
+              <p className="mt-2 text-sm font-semibold leading-6 text-black/60">
+                둘러보기 상태에서는 기록과 사진이 저장되지 않습니다. 닉네임으로 회원가입하면 이 기기에 프로필 사진과 투자 기록이 저장됩니다.
+              </p>
+            </div>
+            <Link href="/onboarding" className="block h-12 rounded-2xl bg-ink pt-3 text-center text-sm font-black text-white">
+              회원가입하고 사진 선택하기
+            </Link>
+          </div>
         )}
 
         <div className="mt-5 grid gap-2">
