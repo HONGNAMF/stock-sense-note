@@ -2,11 +2,18 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { ReflectionPanel } from "@/components/ReflectionPanel";
-import { getEtf } from "@/lib/etf-data";
+import { createFallbackEtf, getEtf } from "@/lib/etf-data";
 
-export default async function EtfDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
+export default async function EtfDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ symbol: string }>;
+  searchParams: Promise<{ name?: string; issuer?: string; fallback?: string }>;
+}) {
   const { symbol } = await params;
-  const etf = getEtf(symbol);
+  const query = await searchParams;
+  const etf = getEtf(symbol) ?? (query.fallback === "1" ? createFallbackEtf(symbol, query) : null);
   if (!etf) notFound();
 
   return (

@@ -65,3 +65,23 @@ export function getEtf(symbol: string) {
   const decoded = decodeURIComponent(symbol);
   return etfs.find((etf) => etf.symbol === decoded);
 }
+
+export function createFallbackEtf(
+  symbol: string,
+  meta?: {
+    name?: string;
+    issuer?: string;
+    character?: Etf["character"];
+  }
+): Etf {
+  const decoded = decodeURIComponent(symbol);
+  return makeEtf(
+    decoded,
+    meta?.name?.trim() || decoded,
+    decoded.includes(".KS") || /^\d{6}$/.test(decoded) ? "KR" : "US",
+    meta?.issuer?.trim() || "운용사 확인 필요",
+    meta?.character || "지수형",
+    "중간",
+    "KRX ETF 검색에서 선택한 상품입니다. 실제 구성 종목과 수익률 API 연결 전까지는 기본 해석 템플릿으로 보여줍니다."
+  );
+}
