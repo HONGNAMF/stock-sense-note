@@ -57,18 +57,6 @@ export default function SearchPage() {
       risk: stock.status === "과열" ? "높음" as const : "중간" as const
     }));
 
-    const feed = popularStocks
-      .filter((item) => !stocks.some((stock) => stock.ticker === item.ticker) && !krxStocks.some((stock) => `${stock.code}.KS` === item.ticker || `${stock.code}.KQ` === item.ticker || stock.code === item.ticker))
-      .map((item) => ({
-        key: `feed-${item.ticker}`,
-        name: item.name,
-        ticker: item.ticker,
-        kind: "시장 피드" as const,
-        sector: item.sector,
-        reason: item.reason,
-        risk: item.risk
-      }));
-
     const krxRows = krxStocks
       .filter((item) => !stocks.some((stock) => stock.ticker.startsWith(item.code)))
       .map((item) => ({
@@ -79,6 +67,18 @@ export default function SearchPage() {
         sector: `${item.market} · ${item.securityType}`,
         reason: "KRX 전종목 기본정보에서 불러온 한국 상장 종목입니다. 상세 해석은 실제 종목 API 연결 후 확장됩니다.",
         risk: "중간" as const
+      }));
+
+    const feed = popularStocks
+      .filter((item) => !stocks.some((stock) => stock.ticker === item.ticker) && !krxStocks.some((stock) => `${stock.code}.KS` === item.ticker || `${stock.code}.KQ` === item.ticker || stock.code === item.ticker))
+      .map((item) => ({
+        key: `feed-${item.ticker}`,
+        name: item.name,
+        ticker: item.ticker,
+        kind: "시장 피드" as const,
+        sector: item.sector,
+        reason: item.reason,
+        risk: item.risk
       }));
 
     const etfRows = etfs.map((etf) => ({
@@ -94,7 +94,7 @@ export default function SearchPage() {
 
     const merged = [...detailed, ...krxRows, ...feed, ...etfRows];
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return merged.slice(0, 80);
+    if (!normalized) return merged;
 
     return merged.filter((row) =>
       [row.name, row.ticker, row.kind, row.sector, row.reason].some((text) => text.toLowerCase().includes(normalized))
@@ -111,10 +111,8 @@ export default function SearchPage() {
     <AppShell>
       <header>
         <p className="text-sm font-bold text-black/50">검색</p>
-        <h1 className="mt-1 text-3xl font-black text-ink">KRX 전체 종목까지 같이 찾아요</h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">
-          한국 주식은 KRX 전종목 기본정보를 요청해 검색하고, 해외주식과 ETF는 MVP 데이터와 함께 보여줍니다.
-        </p>
+        <h1 className="mt-1 text-3xl font-black text-ink">KRX 상장회사 전체를 찾아요</h1>
+        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">한국 주식은 KRX 전종목 기본정보를 요청해 검색하고, 해외주식과 ETF는 MVP 데이터와 함께 보여줍니다.</p>
       </header>
 
       <Link href="/market" className="mt-5 block rounded-3xl bg-ink p-5 text-white shadow-soft">
@@ -133,7 +131,7 @@ export default function SearchPage() {
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="삼성전기, 한미반도체, 현대차, QQQ..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
       <p className="mt-2 text-xs font-bold text-black/42">
-        {krxLoading ? "KRX 전종목을 불러오는 중입니다." : krxStocks.length ? `KRX ${krxStocks.length.toLocaleString()}개 종목 검색 가능` : "KRX 연결에 실패하면 MVP 시장 피드로 검색합니다."}
+        {krxLoading ? "KRX 상장회사 전체를 불러오는 중입니다." : krxStocks.length ? `KRX ${krxStocks.length.toLocaleString()}개 상장 종목 검색 가능` : "KRX 연결에 실패하면 MVP 시장 피드로 검색합니다."}
       </p>
 
       {detailedStocks.length ? (
@@ -148,7 +146,7 @@ export default function SearchPage() {
       ) : null}
 
       <section className="mt-7">
-        <h2 className="text-xl font-black">전체 검색 결과</h2>
+        <h2 className="text-xl font-black">전체 검색 결과 {rows.length.toLocaleString()}개</h2>
         <div className="mt-3 grid gap-2">
           {rows.map((row) => {
             const card = (

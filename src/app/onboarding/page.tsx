@@ -42,6 +42,17 @@ export default function OnboardingPage() {
     setCustomInterest("");
   }
 
+  function selectImage(file?: File) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      alert("JPG 또는 PNG 이미지만 선택할 수 있어요.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setProfileImageUrl(String(reader.result));
+    reader.readAsDataURL(file);
+  }
+
   function finish() {
     const now = new Date().toISOString();
     const profile: LocalProfile = {
@@ -63,9 +74,9 @@ export default function OnboardingPage() {
   return (
     <AppShell>
       <header className="rounded-3xl bg-ink p-6 text-white shadow-soft">
-        <p className="text-sm font-bold text-white/55">내 투자노트 만들기</p>
-        <h1 className="mt-2 text-3xl font-black">이 기기에 저장되는 개인 투자노트예요.</h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-white/72">이메일과 비밀번호 없이 닉네임으로 다시 불러옵니다.</p>
+        <p className="text-sm font-bold text-white/55">sensefolio-note 회원가입</p>
+        <h1 className="mt-2 text-3xl font-black">닉네임으로 내 투자노트를 만들어요.</h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-white/72">이메일과 비밀번호 없이 닉네임으로 이 기기에 저장됩니다.</p>
       </header>
 
       {step === 0 ? (
@@ -74,10 +85,25 @@ export default function OnboardingPage() {
             <span className="text-sm font-black text-black/55">닉네임</span>
             <input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
           </label>
-          <label className="block">
-            <span className="text-sm font-black text-black/55">프로필 이미지 URL 선택 입력</span>
-            <input value={profileImageUrl} onChange={(event) => setProfileImageUrl(event.target.value)} placeholder="JPG / PNG 주소를 나중에 넣어도 돼요" className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
-          </label>
+
+          <div>
+            <p className="text-sm font-black text-black/55">프로필 사진 선택</p>
+            <div className="mt-2 flex items-center gap-3">
+              <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-ink text-xl font-black text-white">
+                {profileImageUrl ? <img src={profileImageUrl} alt="" className="size-16 object-cover" /> : name.slice(0, 1) || "S"}
+              </div>
+              <label className="flex h-12 cursor-pointer items-center rounded-2xl bg-paper px-4 text-sm font-black text-black/65">
+                JPG / PNG 선택
+                <input type="file" accept="image/png,image/jpeg" onChange={(event) => selectImage(event.target.files?.[0])} className="sr-only" />
+              </label>
+              {profileImageUrl ? (
+                <button type="button" onClick={() => setProfileImageUrl("")} className="h-12 rounded-2xl bg-black/[0.05] px-4 text-sm font-black text-black/55">
+                  제거
+                </button>
+              ) : null}
+            </div>
+          </div>
+
           {duplicateFound ? (
             <div className="rounded-2xl bg-lemon/80 p-4">
               <p className="font-black text-yellow-950">이미 같은 닉네임의 투자노트가 있어요.</p>
@@ -88,7 +114,7 @@ export default function OnboardingPage() {
               </div>
             </div>
           ) : null}
-          <button onClick={nextFromProfile} className="h-12 w-full rounded-2xl bg-ink text-sm font-black text-white">내 투자노트 만들기</button>
+          <button onClick={nextFromProfile} className="h-12 w-full rounded-2xl bg-ink text-sm font-black text-white">회원가입</button>
         </section>
       ) : null}
 

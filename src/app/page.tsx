@@ -61,7 +61,7 @@ export default function HomePage() {
     return (
       <AppShell>
         <section className="rounded-3xl bg-ink p-6 text-white shadow-soft">
-          <p className="text-sm font-bold text-white/55">해석노트</p>
+          <p className="text-sm font-bold text-white/55">sensefolio-note</p>
           <h1 className="mt-2 text-4xl font-black">주식과 ETF를 쉽게 풀어보는 투자노트</h1>
           <p className="mt-3 text-sm font-semibold leading-6 text-white/72">로그인해서 내 기록을 이어가거나, 새 투자노트를 만들거나, 회원가입 없이 먼저 둘러볼 수 있어요.</p>
         </section>
@@ -111,7 +111,7 @@ export default function HomePage() {
     <AppShell>
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-bold text-black/50">해석노트</p>
+          <p className="text-sm font-bold text-black/50">sensefolio-note</p>
           <h1 className="mt-1 text-3xl font-black tracking-normal text-ink">{localProfile.localUserId === "guest-browse" ? "주식과 ETF를 쉽게 둘러보는 투자노트" : "회사를 이해하고, 내 판단을 기록하는 투자노트"}</h1>
           <p className="mt-2 text-sm font-semibold leading-6 text-black/55">최근 30일 흐름, 회사 해석, ETF 구성, 내 매수·매도 기록을 한곳에서 정리해요.</p>
         </div>
