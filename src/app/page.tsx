@@ -19,7 +19,6 @@ export default function HomePage() {
   const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loginName, setLoginName] = useState("");
-  const [loginBirthDate, setLoginBirthDate] = useState("");
   const [loginState, setLoginState] = useState<LoginState>("idle");
 
   useEffect(() => {
@@ -33,7 +32,7 @@ export default function HomePage() {
   }, [localProfile]);
 
   function login() {
-    const found = profileService.findProfile(loginName, loginBirthDate);
+    const found = profileService.findProfile(loginName);
     if (!found) {
       setLoginState("not-found");
       return;
@@ -49,17 +48,13 @@ export default function HomePage() {
         <section className="rounded-3xl bg-ink p-6 text-white shadow-soft">
           <p className="text-sm font-bold text-white/55">해석노트</p>
           <h1 className="mt-2 text-4xl font-black">내 투자노트 로그인</h1>
-          <p className="mt-3 text-sm font-semibold leading-6 text-white/72">이름과 생년월일로 이 기기에 저장된 투자노트를 불러옵니다.</p>
+          <p className="mt-3 text-sm font-semibold leading-6 text-white/72">닉네임으로 이 기기에 저장된 투자노트를 불러옵니다.</p>
         </section>
 
         <section className="mt-5 space-y-4 rounded-3xl bg-white p-5 shadow-soft">
           <label className="block">
-            <span className="text-sm font-black text-black/55">이름</span>
+            <span className="text-sm font-black text-black/55">닉네임</span>
             <input value={loginName} onChange={(event) => setLoginName(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
-          </label>
-          <label className="block">
-            <span className="text-sm font-black text-black/55">생년월일</span>
-            <input type="date" value={loginBirthDate} onChange={(event) => setLoginBirthDate(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
           </label>
           <button onClick={login} className="h-12 w-full rounded-2xl bg-ink text-sm font-black text-white">로그인하기</button>
           <Link href="/onboarding" className="block h-12 rounded-2xl bg-black/[0.06] pt-3 text-center text-sm font-black text-black/70">처음이라면 회원가입</Link>
@@ -78,7 +73,7 @@ export default function HomePage() {
         ) : null}
 
         <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">
-          <h2 className="text-xl font-black">이름과 생년월일을 입력하면 나만의 투자노트를 만들 수 있어요.</h2>
+          <h2 className="text-xl font-black">닉네임만 입력하면 나만의 투자노트를 만들 수 있어요.</h2>
           <Link href="/onboarding" className="mt-4 block h-12 rounded-2xl bg-ink pt-3 text-center text-sm font-black text-white">내 투자노트 만들기</Link>
         </section>
       </AppShell>

@@ -12,7 +12,7 @@ export function classifyProfile(input: Omit<UserProfile, "riskProfile">): RiskPr
 }
 
 export function profileGuide(profile?: RiskProfile) {
-  if (!profile) return "이름과 생년월일로 투자노트를 만들면 관심사와 기록에 맞춘 해석을 보여드려요.";
+  if (!profile) return "닉네임으로 투자노트를 만들면 관심사와 기록에 맞춘 해석을 보여드려요.";
   const guides: Record<RiskProfile, string> = {
     안정형: "가격 변동보다 실적 안정성과 긴 흐름을 우선해 볼 만해요.",
     성장형: "성장률과 장기 시장 크기를 보되, 과열 신호를 함께 체크해요.",

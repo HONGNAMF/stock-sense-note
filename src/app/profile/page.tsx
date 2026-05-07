@@ -54,7 +54,7 @@ export default function ProfilePage() {
             <div className="flex flex-wrap gap-2">
               <Badge tone="lilac">{profile.investorSummary ?? "기본 보기"}</Badge>
               <Badge tone="blue">관심종목 {favoriteCount}개</Badge>
-              <Badge tone="lemon">{profile.birthDate}</Badge>
+              <Badge tone="lemon">이 기기에 저장</Badge>
             </div>
             <Info label="관심 분야" value={profile.interests.length ? profile.interests.join(", ") : "아직 설정하지 않았어요"} />
             <Info label="보기 방식" value={profile.viewMode === "simple" ? "한눈에 보기" : profile.viewMode === "detailed" ? "상세 보기" : "기본 보기"} />

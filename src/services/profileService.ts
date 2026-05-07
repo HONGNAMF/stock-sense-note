@@ -7,8 +7,8 @@ const profilesKey = "haeseok-note:v3:profiles";
 const currentProfileKey = "haeseok-note:v3:current-profile-id";
 const settingsKey = "haeseok-note:v3:settings";
 
-function sameIdentity(profile: LocalProfile, name: string, birthDate: string) {
-  return profile.name.trim() === name.trim() && profile.birthDate === birthDate;
+function sameIdentity(profile: LocalProfile, name: string) {
+  return profile.name.trim().toLowerCase() === name.trim().toLowerCase();
 }
 
 export const profileService = {
@@ -20,7 +20,7 @@ export const profileService = {
     const id = profileService.getCurrentProfileId();
     return profileService.getProfiles().find((profile) => profile.localUserId === id) ?? null;
   },
-  findProfile: (name: string, birthDate: string) => profileService.getProfiles().find((profile) => sameIdentity(profile, name, birthDate)) ?? null,
+  findProfile: (name: string) => profileService.getProfiles().find((profile) => sameIdentity(profile, name)) ?? null,
   createProfile: (profile: LocalProfile) => {
     const profiles = profileService.getProfiles();
     profileService.saveProfiles([profile, ...profiles]);

@@ -6,7 +6,7 @@ export type AssetKind = "stock" | "etf";
 export type LocalProfile = {
   localUserId: string;
   name: string;
-  birthDate: string;
+  birthDate?: string;
   profileImageUrl?: string;
   interests: string[];
   watchSymbols: string[];

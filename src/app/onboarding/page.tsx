@@ -13,7 +13,6 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState("");
@@ -27,8 +26,8 @@ export default function OnboardingPage() {
   }
 
   function nextFromProfile() {
-    if (!name.trim() || !birthDate) return;
-    const existing = profileService.findProfile(name, birthDate);
+    if (!name.trim()) return;
+    const existing = profileService.findProfile(name);
     if (existing && !allowDuplicate) {
       setDuplicateFound(true);
       return;
@@ -48,7 +47,6 @@ export default function OnboardingPage() {
     const profile: LocalProfile = {
       localUserId: crypto.randomUUID(),
       name: name.trim(),
-      birthDate,
       profileImageUrl,
       interests,
       watchSymbols,
@@ -67,18 +65,14 @@ export default function OnboardingPage() {
       <header className="rounded-3xl bg-ink p-6 text-white shadow-soft">
         <p className="text-sm font-bold text-white/55">내 투자노트 만들기</p>
         <h1 className="mt-2 text-3xl font-black">이 기기에 저장되는 개인 투자노트예요.</h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-white/72">이메일과 비밀번호 없이 이름과 생년월일로 다시 불러옵니다.</p>
+        <p className="mt-3 text-sm font-semibold leading-6 text-white/72">이메일과 비밀번호 없이 닉네임으로 다시 불러옵니다.</p>
       </header>
 
       {step === 0 ? (
         <section className="mt-5 space-y-4 rounded-3xl bg-white p-5 shadow-soft">
           <label className="block">
-            <span className="text-sm font-black text-black/55">이름</span>
+            <span className="text-sm font-black text-black/55">닉네임</span>
             <input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
-          </label>
-          <label className="block">
-            <span className="text-sm font-black text-black/55">생년월일</span>
-            <input type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-4 font-bold outline-none" />
           </label>
           <label className="block">
             <span className="text-sm font-black text-black/55">프로필 이미지 URL 선택 입력</span>
@@ -86,11 +80,11 @@ export default function OnboardingPage() {
           </label>
           {duplicateFound ? (
             <div className="rounded-2xl bg-lemon/80 p-4">
-              <p className="font-black text-yellow-950">이미 같은 이름과 생년월일의 투자노트가 있어요.</p>
+              <p className="font-black text-yellow-950">이미 같은 닉네임의 투자노트가 있어요.</p>
               <p className="mt-1 text-sm font-semibold text-yellow-950/75">로그인해서 이어서 볼까요?</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button onClick={() => router.push("/")} className="h-11 rounded-2xl bg-ink text-xs font-black text-white">로그인하기</button>
-                <button onClick={() => { setAllowDuplicate(true); setDuplicateFound(false); }} className="h-11 rounded-2xl bg-white text-xs font-black text-black/65">다른 이름으로 만들기</button>
+                <button onClick={() => { setAllowDuplicate(true); setDuplicateFound(false); }} className="h-11 rounded-2xl bg-white text-xs font-black text-black/65">다른 닉네임으로 만들기</button>
               </div>
             </div>
           ) : null}
