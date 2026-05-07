@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
+import { resizeImageFile } from "@/lib/image-utils";
 import { stocks } from "@/lib/mock-data";
 import { storage } from "@/lib/storage";
 import { profileService } from "@/services/profileService";
@@ -41,26 +42,27 @@ export default function ProfilePage() {
     window.location.href = "/";
   }
 
-  function changeProfileImage(file?: File) {
+  async function changeProfileImage(file?: File) {
     if (!profile || !file) return;
-    if (!["image/jpeg", "image/png"].includes(file.type)) {
-      alert("JPG 또는 PNG 이미지만 선택할 수 있어요.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const next = { ...profile, profileImageUrl: String(reader.result), updatedAt: new Date().toISOString() };
+    try {
+      const profileImageUrl = await resizeImageFile(file);
+      const next = { ...profile, profileImageUrl, updatedAt: new Date().toISOString() };
       profileService.updateProfile(next);
       setProfile(next);
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "프로필 사진을 저장하지 못했어요.");
+    }
   }
 
   function removeProfileImage() {
     if (!profile) return;
     const next = { ...profile, profileImageUrl: "", updatedAt: new Date().toISOString() };
-    profileService.updateProfile(next);
-    setProfile(next);
+    try {
+      profileService.updateProfile(next);
+      setProfile(next);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "프로필 사진을 제거하지 못했어요.");
+    }
   }
 
   return (

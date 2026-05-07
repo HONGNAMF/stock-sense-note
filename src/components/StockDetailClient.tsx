@@ -75,6 +75,7 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
 
   const shownPrice = liveQuote?.formattedPrice ?? stock.currentPrice;
   const shownChangeRate = liveQuote?.changeRate ?? stock.changeRate;
+  const shownMarketCap = liveQuote?.formattedMarketCap ?? stock.marketCap;
   const isLivePrice = Boolean(liveQuote);
 
   return (
@@ -128,7 +129,7 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
 
       <Section title="기본 지표" sub="PER, PBR, EPS, ROE는 [?]를 누르면 쉬운 설명을 볼 수 있어요.">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Metric title="시가총액" value={stock.marketCap} />
+          <Metric title={liveQuote?.formattedMarketCap ? "시가총액" : "시가총액"} value={shownMarketCap} />
           <TermButton term="PER" value={stock.per} />
           <TermButton term="PBR" value={stock.pbr} />
           <TermButton term="EPS" value={stock.eps} />

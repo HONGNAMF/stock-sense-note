@@ -228,6 +228,13 @@ export function createFallbackStock(
   const sector = meta?.sector?.trim() || "KRX 검색 종목";
   const product = meta?.product?.trim();
   const reason = meta?.reason?.trim() || (product ? `주요제품: ${product}` : "검색에서 선택한 종목입니다. 아직 실제 상세 API가 연결되지 않아 기본 해석 템플릿으로 보여줍니다.");
+  const businessLine = product
+    ? `${name}은 KRX 기본정보 기준으로 ${product}와 관련된 사업을 하는 회사로 볼 수 있어요. 정확한 사업 비중은 사업보고서에서 확인해야 합니다.`
+    : `${name}은 ${sector}에 속한 상장회사입니다. 먼저 업종, 주요 제품, 매출처를 확인하면 회사 이해가 쉬워집니다.`;
+  const revenueLine = product
+    ? `주요 제품이나 서비스가 실제 매출로 얼마나 이어지는지, 특정 고객이나 한 제품에 매출이 몰려 있는지 확인해야 합니다.`
+    : `매출 구조는 제품 판매, 서비스, 수주, 플랫폼, 수수료 등 업종마다 다르므로 사업보고서의 매출 구성을 먼저 봐야 합니다.`;
+  const riskLine = `${sector} 업종은 경기, 원가, 환율, 수요 변화, 규제나 공시 이슈에 따라 평가가 달라질 수 있어요. 검색 종목은 아직 세부 재무 API가 연결되지 않아 숫자 해석은 보수적으로 봐야 합니다.`;
 
   return stock({
     ticker: decodedTicker,
@@ -236,10 +243,26 @@ export function createFallbackStock(
     status: "안정",
     interests: ["기타"],
     aiBadge: "관망 구간",
-    oneLine: "아직 실제 재무·뉴스 API가 연결되지 않은 종목이라 기본 해석 템플릿으로 먼저 보여줍니다.",
+    oneLine: `${sector} 흐름과 회사의 실제 매출 구조를 함께 확인해야 하는 검색 종목입니다.`,
     whyNow: reason,
-    riskNote: "현재 화면의 가격과 지표는 실제 시세가 아니라 MVP 예시입니다. 실제 투자 판단 전에는 KRX 시세, DART 공시, 증권사 리포트, 최근 뉴스를 반드시 확인해야 합니다.",
+    riskNote: riskLine,
     updateRule: "실제 API 연결 후 시세, 재무, 공시, 뉴스 기준으로 자동 업데이트",
+    marketCap: "시가총액 확인 중: 시세 API 응답 시 자동 표시",
+    per: "PER 확인 필요: 재무 API 연결 후 표시",
+    pbr: "PBR 확인 필요: 재무 API 연결 후 표시",
+    eps: "EPS 확인 필요: 재무 API 연결 후 표시",
+    roe: "ROE 확인 필요: 재무 API 연결 후 표시",
+    analysis: {
+      business: businessLine,
+      revenue: revenueLine,
+      earnings: "최근 실적은 매출 증가율, 영업이익률, 일회성 비용 여부를 나눠서 봐야 합니다. MVP에서는 DART/FnGuide 연결 전이라 방향성 설명 중심으로 제공합니다.",
+      valuation: "현재 주가가 비싼지 싼지는 시가총액, 이익 규모, 같은 업종 기업의 PER/PBR을 함께 비교해야 합니다. 시가총액은 가능한 경우 지연 시세 API로 표시합니다.",
+      trend: "단기 등락보다 최근 30일 흐름, 거래량 변화, 공시나 뉴스가 동반됐는지를 먼저 보는 것이 좋습니다.",
+      buyNow: "참고용 해석 기준으로는 바로 판단하기보다 회사가 뭘 팔고, 실적이 유지되는지, 가격 부담이 있는지를 순서대로 확인하는 편이 안전합니다.",
+      longTerm: "장기 보유 가능성은 이 회사의 제품이나 서비스가 앞으로도 필요한지, 이익을 꾸준히 낼 수 있는지에 달려 있습니다.",
+      risks: riskLine,
+      peers: "같은 업종의 대표 기업, 시가총액이 비슷한 기업, 제품이 겹치는 기업과 비교하면 상대적인 위치를 보기 좋습니다."
+    },
     news: [news(`${name} 기본 정보 확인 필요`, "중립")]
   });
 }

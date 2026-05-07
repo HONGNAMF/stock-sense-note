@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { resizeImageFile } from "@/lib/image-utils";
 import { profileService } from "@/services/profileService";
 import type { LocalProfile } from "@/types/investment";
 
@@ -42,15 +43,13 @@ export default function OnboardingPage() {
     setCustomInterest("");
   }
 
-  function selectImage(file?: File) {
+  async function selectImage(file?: File) {
     if (!file) return;
-    if (!["image/jpeg", "image/png"].includes(file.type)) {
-      alert("JPG 또는 PNG 이미지만 선택할 수 있어요.");
-      return;
+    try {
+      setProfileImageUrl(await resizeImageFile(file));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "이미지를 저장하지 못했어요.");
     }
-    const reader = new FileReader();
-    reader.onload = () => setProfileImageUrl(String(reader.result));
-    reader.readAsDataURL(file);
   }
 
   function finish() {
@@ -67,8 +66,12 @@ export default function OnboardingPage() {
       createdAt: now,
       updatedAt: now
     };
-    profileService.createProfile(profile);
-    router.push("/");
+    try {
+      profileService.createProfile(profile);
+      router.push("/");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "투자노트를 저장하지 못했어요.");
+    }
   }
 
   return (

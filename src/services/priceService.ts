@@ -5,6 +5,8 @@ export type LivePriceQuote = {
   formattedPrice: string;
   changeRate: number;
   currency: string;
+  marketCap?: number;
+  formattedMarketCap?: string;
   marketTime?: string;
   source: string;
   isFallback: boolean;
