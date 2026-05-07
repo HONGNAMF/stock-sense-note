@@ -21,7 +21,7 @@ export type LivePriceQuotePayload = {
   formattedWeek52Low?: string;
   marketTime?: string;
   source: string;
-  provider: "KIS" | "Yahoo";
+  provider: "KIS" | "Naver" | "Yahoo";
   realtime: boolean;
   isFallback: boolean;
 };
@@ -69,6 +69,7 @@ type YahooQuoteResponse = {
 
 const YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
 const YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v7/finance/quote";
+const NAVER_ITEM_URL = "https://finance.naver.com/item/main.naver";
 const KIS_BASE_URL = process.env.KIS_BASE_URL || "https://openapi.koreainvestment.com:9443";
 
 function decodeTicker(ticker: string) {
@@ -92,7 +93,7 @@ function domesticCode(ticker: string) {
 }
 
 function formatPrice(price: number, currency: string) {
-  if (currency === "KRW") return `${Math.round(price).toLocaleString("ko-KR")}원`;
+  if (currency === "KRW") return `${Math.round(price).toLocaleString("ko-KR")} KRW`;
   if (currency === "USD") return `$${price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
   return `${price.toLocaleString("ko-KR", { maximumFractionDigits: 2 })} ${currency}`;
 }
@@ -100,19 +101,19 @@ function formatPrice(price: number, currency: string) {
 function formatMarketCap(value: number, currency: string) {
   if (currency === "KRW") {
     const trillion = value / 1_0000_0000_0000;
-    if (trillion >= 1) return `약 ${trillion.toFixed(1)}조원`;
-    return `약 ${(value / 1_0000_0000).toFixed(0)}억원`;
+    if (trillion >= 1) return `about ${trillion.toFixed(1)}T KRW`;
+    return `about ${(value / 1_0000_0000).toFixed(0)}B KRW`;
   }
   if (currency === "USD") {
     const billion = value / 1_000_000_000;
-    if (billion >= 1) return `약 $${billion.toFixed(1)}B`;
-    return `약 $${(value / 1_000_000).toFixed(0)}M`;
+    if (billion >= 1) return `about $${billion.toFixed(1)}B`;
+    return `about $${(value / 1_000_000).toFixed(0)}M`;
   }
   return `${value.toLocaleString("ko-KR")} ${currency}`;
 }
 
 function formatRatio(value: number) {
-  return `${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}배`;
+  return `${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}x`;
 }
 
 function formatPercent(value: number) {
@@ -128,6 +129,109 @@ function numberFromKis(value?: string) {
   if (!value) return undefined;
   const parsed = Number(value.replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function stripHtml(value: string) {
+  return value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function numberFromText(value?: string) {
+  if (!value) return undefined;
+  const parsed = Number(stripHtml(value).replace(/,/g, "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function textByRegex(html: string, pattern: RegExp) {
+  return stripHtml(pattern.exec(html)?.[1] ?? "");
+}
+
+function numberById(html: string, id: string) {
+  return numberFromText(textByRegex(html, new RegExp(`<em\\s+id=["']${id}["'][^>]*>([\\s\\S]*?)<\\/em>`, "i")));
+}
+
+function parseNaverMarketCap(html: string): { marketCap?: number; formattedMarketCap?: string } {
+  const raw = textByRegex(html, /<em\s+id=["']_market_sum["'][^>]*>([\s\S]*?)<\/em>\s*억원/i);
+  if (!raw) return {};
+
+  const trillion = numberFromText(/([\d,]+)\s*조/.exec(raw)?.[1]) ?? 0;
+  const eok = numberFromText(/조\s*([\d,]+)/.exec(raw)?.[1]) ?? (raw.includes("조") ? 0 : numberFromText(raw) ?? 0);
+  const marketCap = trillion * 1_0000_0000_0000 + eok * 100_000_000;
+
+  return {
+    marketCap: marketCap || undefined,
+    formattedMarketCap: `${raw}억원`
+  };
+}
+
+function parseNaverRoe(html: string) {
+  const row = /ROE\(지배주주\)<\/strong><\/th>([\s\S]*?)<\/tr>/i.exec(html)?.[1];
+  if (!row) return undefined;
+  const cells = Array.from(row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi))
+    .map((match) => numberFromText(match[1]))
+    .filter((value): value is number => typeof value === "number");
+  return cells.at(-1);
+}
+
+async function fetchNaverFinanceQuote(ticker: string): Promise<LivePriceQuotePayload | null> {
+  const code = domesticCode(ticker);
+  if (!code) return null;
+
+  const url = new URL(NAVER_ITEM_URL);
+  url.searchParams.set("code", code);
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0"
+    },
+    cache: "no-store"
+  });
+  if (!response.ok) return null;
+
+  const html = await response.text();
+  const current = numberFromText(textByRegex(html, /현재가\s*([\d,]+)/));
+  if (!current) return null;
+
+  const changeRate = numberFromText(textByRegex(html, /현재가[\s\S]*?([\d.]+)\s*퍼센트/)) ?? 0;
+  const week52 = /52주최고[\s\S]*?<td>[\s\S]*?<em>([\d,]+)<\/em>[\s\S]*?<em>([\d,]+)<\/em>/i.exec(html);
+  const week52High = numberFromText(week52?.[1]);
+  const week52Low = numberFromText(week52?.[2]);
+  const per = numberById(html, "_per");
+  const eps = numberById(html, "_eps");
+  const pbr = numberById(html, "_pbr");
+  const roe = parseNaverRoe(html);
+  const cap = parseNaverMarketCap(html);
+  const marketTime = textByRegex(html, /<span id="time">([\s\S]*?)<\/span>/i);
+
+  return {
+    ticker: decodeTicker(ticker),
+    providerSymbol: code,
+    price: current,
+    formattedPrice: formatPrice(current, "KRW"),
+    changeRate,
+    currency: "KRW",
+    marketCap: cap.marketCap,
+    formattedMarketCap: cap.formattedMarketCap,
+    per,
+    pbr,
+    eps,
+    roe,
+    week52High,
+    week52Low,
+    formattedPer: per ? formatRatio(per) : undefined,
+    formattedPbr: pbr ? formatRatio(pbr) : undefined,
+    formattedEps: eps ? formatPrice(eps, "KRW") : undefined,
+    formattedRoe: roe ? formatPercent(roe) : undefined,
+    formattedWeek52High: week52High ? formatPrice(week52High, "KRW") : undefined,
+    formattedWeek52Low: week52Low ? formatPrice(week52Low, "KRW") : undefined,
+    marketTime: marketTime || new Date().toISOString(),
+    source: "Naver Finance",
+    provider: "Naver",
+    realtime: false,
+    isFallback: false
+  };
 }
 
 function signedAbs(value?: string) {
@@ -194,7 +298,7 @@ async function fetchKisRealtimeQuote(ticker: string): Promise<LivePriceQuotePayl
     formattedWeek52High: week52High ? formatPrice(week52High, "KRW") : undefined,
     formattedWeek52Low: week52Low ? formatPrice(week52Low, "KRW") : undefined,
     marketTime: new Date().toISOString(),
-    source: "한국투자증권 OpenAPI",
+    source: "Korea Investment OpenAPI",
     provider: "KIS",
     realtime: true,
     isFallback: false
@@ -284,7 +388,7 @@ async function fetchYahooQuote(symbol: string) {
     formattedWeek52High: fundamentals?.formattedWeek52High,
     formattedWeek52Low: fundamentals?.formattedWeek52Low,
     marketTime: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : undefined,
-    source: `Yahoo Finance${meta.exchangeName ? ` · ${meta.exchangeName}` : ""}`,
+    source: `Yahoo Finance${meta.exchangeName ? ` / ${meta.exchangeName}` : ""}`,
     provider: "Yahoo" as const,
     realtime: false,
     isFallback: false
@@ -297,6 +401,9 @@ export async function getLivePriceQuote(ticker: string): Promise<LivePriceQuoteP
 
   const kisQuote = await fetchKisRealtimeQuote(decoded);
   if (kisQuote) return kisQuote;
+
+  const naverQuote = await fetchNaverFinanceQuote(decoded);
+  if (naverQuote) return naverQuote;
 
   for (const symbol of yahooCandidates(decoded)) {
     const quote = await fetchYahooQuote(symbol);

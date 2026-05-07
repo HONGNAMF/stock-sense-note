@@ -21,7 +21,7 @@ export type LivePriceQuote = {
   formattedWeek52Low?: string;
   marketTime?: string;
   source: string;
-  provider: "KIS" | "Yahoo";
+  provider: "KIS" | "Naver" | "Yahoo";
   realtime: boolean;
   isFallback: boolean;
 };
