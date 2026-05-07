@@ -1,4 +1,14 @@
-import { NextResponse } from "next/server";
+export type LivePriceQuotePayload = {
+  ticker: string;
+  providerSymbol: string;
+  price: number;
+  formattedPrice: string;
+  changeRate: number;
+  currency: string;
+  marketTime?: string;
+  source: string;
+  isFallback: boolean;
+};
 
 type YahooChartResult = {
   meta?: {
@@ -72,27 +82,19 @@ async function fetchYahooQuote(symbol: string) {
   };
 }
 
-export async function GET(_: Request, { params }: { params: Promise<{ ticker: string }> }) {
-  const { ticker } = await params;
+export async function getLivePriceQuote(ticker: string): Promise<LivePriceQuotePayload | null> {
   const decoded = decodeTicker(ticker);
+  if (!decoded) return null;
 
   for (const symbol of yahooCandidates(decoded)) {
     const quote = await fetchYahooQuote(symbol);
     if (quote) {
-      return NextResponse.json({
-        quote: {
-          ticker: decoded,
-          ...quote
-        }
-      });
+      return {
+        ticker: decoded,
+        ...quote
+      };
     }
   }
 
-  return NextResponse.json(
-    {
-      quote: null,
-      message: "Live quote not available. The UI should fall back to MVP sample data."
-    },
-    { status: 200 }
-  );
+  return null;
 }

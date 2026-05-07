@@ -15,7 +15,7 @@ export const priceService = {
 
   async getLiveQuote(ticker: string): Promise<LivePriceQuote | null> {
     try {
-      const response = await fetch(`/api/prices/${encodeURIComponent(ticker)}`, { cache: "no-store" });
+      const response = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`, { cache: "no-store" });
       if (!response.ok) return null;
       const data = (await response.json()) as { quote?: LivePriceQuote };
       return data.quote ?? null;
