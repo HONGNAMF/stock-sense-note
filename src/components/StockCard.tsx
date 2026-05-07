@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/Badge";
+import { priceService, type LivePriceQuote } from "@/services/priceService";
 import type { Stock } from "@/types";
 
 function statusTone(status: Stock["status"]) {
@@ -11,8 +15,25 @@ function statusTone(status: Stock["status"]) {
 }
 
 export function StockCard({ stock }: { stock: Stock }) {
-  const isUp = stock.changeRate >= 0;
+  const [liveQuote, setLiveQuote] = useState<LivePriceQuote | null>(null);
+  const [priceLoading, setPriceLoading] = useState(true);
+  const shownChangeRate = liveQuote?.changeRate ?? stock.changeRate;
+  const shownPrice = liveQuote?.formattedPrice ?? stock.currentPrice;
+  const isUp = shownChangeRate >= 0;
   const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight;
+
+  useEffect(() => {
+    let alive = true;
+    setPriceLoading(true);
+    priceService.getLiveQuote(stock.ticker).then((quote) => {
+      if (!alive) return;
+      setLiveQuote(quote);
+      setPriceLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [stock.ticker]);
 
   return (
     <Link href={`/stocks/${encodeURIComponent(stock.ticker)}`} className="block h-full">
@@ -42,14 +63,14 @@ export function StockCard({ stock }: { stock: Stock }) {
 
         <div className="mt-4 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-black/45">MVP 예시 가격</p>
-            <p className="text-lg font-black">{stock.currentPrice}</p>
+            <p className="text-xs font-bold text-black/45">{priceLoading ? "시세 확인 중" : liveQuote ? "지연 시세" : "MVP 예시 가격"}</p>
+            <p className="text-lg font-black">{shownPrice}</p>
           </div>
           <div className={isUp ? "flex items-center gap-1 font-black text-emerald-600" : "flex items-center gap-1 font-black text-red-500"}>
             <TrendIcon size={18} />
-            <span className="text-xs text-black/45">예시 등락률</span>
+            <span className="text-xs text-black/45">{liveQuote ? "전일 대비" : "예시 등락률"}</span>
             {isUp ? "+" : ""}
-            {stock.changeRate}%
+            {shownChangeRate}%
           </div>
         </div>
       </article>

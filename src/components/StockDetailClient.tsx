@@ -12,6 +12,7 @@ import { ReflectionPanel } from "@/components/ReflectionPanel";
 import { getHistoricalProfile } from "@/lib/historical-data";
 import { getAnalysisEvidence, getEvidenceLinks } from "@/lib/signal-links";
 import { storage } from "@/lib/storage";
+import { priceService, type LivePriceQuote } from "@/services/priceService";
 import type { Stock, StockNote } from "@/types";
 
 const analysisLabels: Array<[keyof Stock["analysis"], string]> = [
@@ -29,6 +30,8 @@ const analysisLabels: Array<[keyof Stock["analysis"], string]> = [
 export function StockDetailClient({ stock }: { stock: Stock }) {
   const historical = getHistoricalProfile(stock.ticker);
   const evidenceLinks = getEvidenceLinks(stock.ticker);
+  const [liveQuote, setLiveQuote] = useState<LivePriceQuote | null>(null);
+  const [priceLoading, setPriceLoading] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const [openAnalysisKey, setOpenAnalysisKey] = useState<string | null>("buyNow");
@@ -47,6 +50,19 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
     if (current) setNote(current);
   }, [stock.ticker]);
 
+  useEffect(() => {
+    let alive = true;
+    setPriceLoading(true);
+    priceService.getLiveQuote(stock.ticker).then((quote) => {
+      if (!alive) return;
+      setLiveQuote(quote);
+      setPriceLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [stock.ticker]);
+
   function update(field: keyof StockNote, value: string) {
     setSaved(false);
     setNote((current) => ({ ...current, [field]: value }));
@@ -56,6 +72,10 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
     storage.saveNote({ ...note, updatedAt: new Date().toISOString() });
     setSaved(true);
   }
+
+  const shownPrice = liveQuote?.formattedPrice ?? stock.currentPrice;
+  const shownChangeRate = liveQuote?.changeRate ?? stock.changeRate;
+  const isLivePrice = Boolean(liveQuote);
 
   return (
     <AppShell>
@@ -75,13 +95,16 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
       <section className="mt-6 rounded-3xl bg-white p-5 shadow-soft">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-black/45">MVP 예시 현재가</p>
-            <p className="mt-1 text-3xl font-black">{stock.currentPrice}</p>
+            <p className="text-sm font-black text-black/45">{priceLoading ? "시세 확인 중" : isLivePrice ? "지연 시세 현재가" : "MVP 예시 가격"}</p>
+            <p className="mt-1 text-3xl font-black">{shownPrice}</p>
+            <p className="mt-1 text-xs font-bold text-black/42">
+              {isLivePrice ? `${liveQuote?.source} 기준 · 실제 거래 전 증권사 앱에서 한 번 더 확인하세요.` : "시세 API가 응답하지 않으면 예시 데이터로 표시합니다."}
+            </p>
           </div>
-          <p className={stock.changeRate >= 0 ? "text-xl font-black text-emerald-600" : "text-xl font-black text-red-500"}>
-            <span className="mr-1 text-xs text-black/45">예시 등락률</span>
-            {stock.changeRate >= 0 ? "+" : ""}
-            {stock.changeRate}%
+          <p className={shownChangeRate >= 0 ? "text-xl font-black text-emerald-600" : "text-xl font-black text-red-500"}>
+            <span className="mr-1 text-xs text-black/45">{isLivePrice ? "전일 대비" : "예시 등락률"}</span>
+            {shownChangeRate >= 0 ? "+" : ""}
+            {shownChangeRate}%
           </p>
         </div>
         <div className="mt-4">
