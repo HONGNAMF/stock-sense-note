@@ -36,9 +36,31 @@ export default function ProfilePage() {
   }
 
   function resetCurrentNote() {
-    if (!confirm("현재 기기에 저장된 이 투자노트 정보를 초기화할까요?")) return;
+    if (!confirm("현재 기기에 저장된 이 투자노트를 초기화할까요?")) return;
     profileService.resetCurrentProfile();
     window.location.href = "/";
+  }
+
+  function changeProfileImage(file?: File) {
+    if (!profile || !file) return;
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      alert("JPG 또는 PNG 이미지만 선택할 수 있어요.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const next = { ...profile, profileImageUrl: String(reader.result), updatedAt: new Date().toISOString() };
+      profileService.updateProfile(next);
+      setProfile(next);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeProfileImage() {
+    if (!profile) return;
+    const next = { ...profile, profileImageUrl: "", updatedAt: new Date().toISOString() };
+    profileService.updateProfile(next);
+    setProfile(next);
   }
 
   return (
@@ -51,6 +73,26 @@ export default function ProfilePage() {
       <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">
         {profile ? (
           <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-ink text-2xl font-black text-white">
+                {profile.profileImageUrl ? <img src={profile.profileImageUrl} alt="" className="size-20 object-cover" /> : profile.name.slice(0, 1)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-black text-black/45">프로필 사진</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <label className="flex h-10 cursor-pointer items-center rounded-2xl bg-paper px-3 text-xs font-black text-black/65">
+                    사진 바꾸기
+                    <input type="file" accept="image/png,image/jpeg" onChange={(event) => changeProfileImage(event.target.files?.[0])} className="sr-only" />
+                  </label>
+                  {profile.profileImageUrl ? (
+                    <button type="button" onClick={removeProfileImage} className="h-10 rounded-2xl bg-black/[0.05] px-3 text-xs font-black text-black/55">
+                      사진 제거
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-2">
               <Badge tone="lilac">{profile.investorSummary ?? "기본 보기"}</Badge>
               <Badge tone="blue">관심종목 {favoriteCount}개</Badge>
@@ -61,7 +103,7 @@ export default function ProfilePage() {
             <Info label="저장 방식" value="현재 버전은 이 기기에 저장됩니다." />
           </div>
         ) : (
-          <p className="font-semibold leading-7 text-black/60">이름과 생년월일로 이 기기에 저장된 투자노트를 불러올 수 있어요.</p>
+          <p className="font-semibold leading-7 text-black/60">닉네임으로 이 기기에 저장된 투자노트를 불러올 수 있어요.</p>
         )}
 
         <div className="mt-5 grid gap-2">

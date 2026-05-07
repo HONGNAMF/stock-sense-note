@@ -23,7 +23,7 @@ type SearchRow = {
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
-  const [krxStocks, setKrxStocks] = useState<Array<{ code: string; name: string; shortName: string; market: string; securityType: string }>>([]);
+  const [krxStocks, setKrxStocks] = useState<Array<{ code: string; name: string; shortName: string; market: string; securityType: string; industry?: string; product?: string }>>([]);
   const [krxLoading, setKrxLoading] = useState(true);
 
   useEffect(() => {
@@ -64,8 +64,8 @@ export default function SearchPage() {
         name: item.shortName || item.name,
         ticker: item.code,
         kind: "KRX" as const,
-        sector: `${item.market} · ${item.securityType}`,
-        reason: "KRX 전종목 기본정보에서 불러온 한국 상장 종목입니다. 상세 해석은 실제 종목 API 연결 후 확장됩니다.",
+        sector: [item.market, item.industry].filter(Boolean).join(" · "),
+        reason: item.product ? `주요제품: ${item.product}` : "KRX 상장법인목록에서 불러온 한국 상장회사입니다. 상세 해석은 실제 종목 API 연결 후 확장됩니다.",
         risk: "중간" as const
       }));
 
@@ -131,7 +131,7 @@ export default function SearchPage() {
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="삼성전기, 한미반도체, 현대차, QQQ..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
       <p className="mt-2 text-xs font-bold text-black/42">
-        {krxLoading ? "KRX 상장회사 전체를 불러오는 중입니다." : krxStocks.length ? `KRX ${krxStocks.length.toLocaleString()}개 상장 종목 검색 가능` : "KRX 연결에 실패하면 MVP 시장 피드로 검색합니다."}
+        {krxLoading ? "KRX 상장회사 전체를 불러오는 중입니다." : krxStocks.length ? `KRX 상장회사 ${krxStocks.length.toLocaleString()}개 검색 가능` : "KRX 연결에 실패하면 MVP 시장 피드로 검색합니다."}
       </p>
 
       {detailedStocks.length ? (
