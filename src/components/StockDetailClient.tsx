@@ -73,10 +73,11 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
     setSaved(true);
   }
 
-  const shownPrice = liveQuote?.formattedPrice ?? stock.currentPrice;
+  const shownPrice = liveQuote?.formattedPrice ?? cleanMetric(stock.currentPrice);
   const shownChangeRate = liveQuote?.changeRate ?? stock.changeRate;
-  const shownMarketCap = liveQuote?.formattedMarketCap ?? stock.marketCap;
+  const shownMarketCap = liveQuote?.formattedMarketCap ?? cleanMetric(stock.marketCap);
   const isLivePrice = Boolean(liveQuote);
+  const priceLabel = priceLoading ? "시세 확인 중" : liveQuote?.realtime ? "실시간 현재가" : liveQuote ? "지연 시세 현재가" : "시세 확인 필요";
 
   return (
     <AppShell>
@@ -96,10 +97,10 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
       <section className="mt-6 rounded-3xl bg-white p-5 shadow-soft">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-black/45">{priceLoading ? "시세 확인 중" : isLivePrice ? "지연 시세 현재가" : "MVP 예시 가격"}</p>
+            <p className="text-sm font-black text-black/45">{priceLabel}</p>
             <p className="mt-1 text-3xl font-black">{shownPrice}</p>
             <p className="mt-1 text-xs font-bold text-black/42">
-              {isLivePrice ? `${liveQuote?.source} 기준 · 실제 거래 전 증권사 앱에서 한 번 더 확인하세요.` : "시세 API가 응답하지 않으면 예시 데이터로 표시합니다."}
+              {isLivePrice ? `${liveQuote?.source} 기준 · 실제 거래 전 증권사 앱에서 한 번 더 확인하세요.` : "실시간 시세 API 키가 없거나 응답하지 않아 데이터를 확인하지 못했습니다."}
             </p>
           </div>
           <p className={shownChangeRate >= 0 ? "text-xl font-black text-emerald-600" : "text-xl font-black text-red-500"}>
@@ -129,13 +130,13 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
 
       <Section title="기본 지표" sub="PER, PBR, EPS, ROE는 [?]를 누르면 쉬운 설명을 볼 수 있어요.">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Metric title={liveQuote?.formattedMarketCap ? "시가총액" : "시가총액"} value={shownMarketCap} />
-          <TermButton term="PER" value={stock.per} />
-          <TermButton term="PBR" value={stock.pbr} />
-          <TermButton term="EPS" value={stock.eps} />
-          <TermButton term="ROE" value={stock.roe} />
-          <Metric title="52주 최고" value={stock.week52High} />
-          <Metric title="52주 최저" value={stock.week52Low} />
+          <Metric title="시가총액" value={shownMarketCap} />
+          <TermButton term="PER" value={liveQuote?.formattedPer ?? cleanMetric(stock.per)} />
+          <TermButton term="PBR" value={liveQuote?.formattedPbr ?? cleanMetric(stock.pbr)} />
+          <TermButton term="EPS" value={liveQuote?.formattedEps ?? cleanMetric(stock.eps)} />
+          <TermButton term="ROE" value={liveQuote?.formattedRoe ?? cleanMetric(stock.roe)} />
+          <Metric title="52주 최고" value={liveQuote?.formattedWeek52High ?? cleanMetric(stock.week52High)} />
+          <Metric title="52주 최저" value={liveQuote?.formattedWeek52Low ?? cleanMetric(stock.week52Low)} />
           <Metric title="상태" value={stock.status} />
         </div>
       </Section>
@@ -241,6 +242,11 @@ function Metric({ title, value }: { title: string; value: string }) {
       <p className="mt-1 text-base font-black text-ink">{value}</p>
     </div>
   );
+}
+
+function cleanMetric(value: string) {
+  if (!value || value.includes("예시") || value.includes("MVP")) return "데이터 확인 필요";
+  return value;
 }
 
 function InfoBox({ title, body, danger = false }: { title: string; body: string; danger?: boolean }) {

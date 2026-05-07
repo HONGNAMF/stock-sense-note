@@ -7,8 +7,22 @@ export type LivePriceQuote = {
   currency: string;
   marketCap?: number;
   formattedMarketCap?: string;
+  per?: number;
+  pbr?: number;
+  eps?: number;
+  roe?: number;
+  week52High?: number;
+  week52Low?: number;
+  formattedPer?: string;
+  formattedPbr?: string;
+  formattedEps?: string;
+  formattedRoe?: string;
+  formattedWeek52High?: string;
+  formattedWeek52Low?: string;
   marketTime?: string;
   source: string;
+  provider: "KIS" | "Yahoo";
+  realtime: boolean;
   isFallback: boolean;
 };
 
