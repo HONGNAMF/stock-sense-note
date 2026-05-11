@@ -10,9 +10,9 @@ import { Section } from "@/components/Section";
 import { TermButton } from "@/components/TermButton";
 import { ReflectionPanel } from "@/components/ReflectionPanel";
 import { getHistoricalProfile } from "@/lib/historical-data";
-import { getAnalysisEvidence, getEvidenceLinks } from "@/lib/signal-links";
 import { storage } from "@/lib/storage";
 import { priceService, type LivePriceQuote } from "@/services/priceService";
+import { companyProfileService } from "@/services/companyProfileService";
 import type { Stock, StockNote } from "@/types";
 
 const analysisLabels: Array<[keyof Stock["analysis"], string]> = [
@@ -29,12 +29,12 @@ const analysisLabels: Array<[keyof Stock["analysis"], string]> = [
 
 export function StockDetailClient({ stock }: { stock: Stock }) {
   const historical = getHistoricalProfile(stock.ticker);
-  const evidenceLinks = getEvidenceLinks(stock.ticker);
+  const companyProfile = stock.companyProfile ?? companyProfileService.getByTicker(stock.ticker);
   const [liveQuote, setLiveQuote] = useState<LivePriceQuote | null>(null);
   const [priceLoading, setPriceLoading] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
-  const [openAnalysisKey, setOpenAnalysisKey] = useState<string | null>("buyNow");
+  const [viewMode, setViewMode] = useState<"simple" | "standard" | "detailed">("standard");
   const [note, setNote] = useState<StockNote>({
     ticker: stock.ticker,
     reason: "",
@@ -44,6 +44,7 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
     updatedAt: ""
   });
   const [saved, setSaved] = useState(false);
+  const [guestMessage, setGuestMessage] = useState(false);
 
   useEffect(() => {
     const current = storage.getNote(stock.ticker);
@@ -69,15 +70,20 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
   }
 
   function saveNote() {
-    storage.saveNote({ ...note, updatedAt: new Date().toISOString() });
+    const ok = storage.saveNote({ ...note, updatedAt: new Date().toISOString() });
+    if (!ok) {
+      setGuestMessage(true);
+      return;
+    }
     setSaved(true);
   }
 
   const shownPrice = liveQuote?.formattedPrice ?? cleanMetric(stock.currentPrice);
   const shownChangeRate = liveQuote?.changeRate ?? stock.changeRate;
   const shownMarketCap = liveQuote?.formattedMarketCap ?? cleanMetric(stock.marketCap);
-  const isLivePrice = Boolean(liveQuote);
-  const priceLabel = priceLoading ? "시세 확인 중" : liveQuote?.realtime ? "실시간 현재가" : liveQuote ? "지연 시세 현재가" : "시세 확인 필요";
+  const priceLabel = priceLoading ? "시세 확인 중" : liveQuote?.realtime ? "실시간 현재가" : liveQuote ? "지연 시세 현재가" : "MVP 예시 가격";
+  const isSimple = viewMode === "simple";
+  const isDetailed = viewMode === "detailed";
 
   return (
     <AppShell>
@@ -86,7 +92,10 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
           <Link href="/" className="text-sm font-black text-black/45">홈으로</Link>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge tone="blue">{stock.market}</Badge>
-            <Badge tone="lemon">참고용 분석</Badge>
+            <Badge tone="lemon">참고용 해석</Badge>
+            <Badge tone={companyProfile?.dataConfidence === "높음" ? "green" : companyProfile?.dataConfidence === "낮음" ? "coral" : "yellow"}>
+              데이터 신뢰도: {companyProfile?.dataConfidence ?? "낮음"}
+            </Badge>
           </div>
           <h1 className="mt-3 text-4xl font-black text-ink">{stock.name}</h1>
           <p className="mt-1 text-base font-bold text-black/50">{stock.ticker}</p>
@@ -100,35 +109,44 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
             <p className="text-sm font-black text-black/45">{priceLabel}</p>
             <p className="mt-1 text-3xl font-black">{shownPrice}</p>
             <p className="mt-1 text-xs font-bold text-black/42">
-              {isLivePrice ? `${liveQuote?.source} 기준 · 실제 거래 전 증권사 앱에서 한 번 더 확인하세요.` : "실시간 시세 API 키가 없거나 응답하지 않아 데이터를 확인하지 못했습니다."}
+              {liveQuote ? `${liveQuote.source} 기준입니다. 실제 거래 전 증권사 앱에서 다시 확인하세요.` : "실제 시세 API가 없으면 MVP 예시 또는 확인 필요로 표시됩니다."}
             </p>
           </div>
           <p className={shownChangeRate >= 0 ? "text-xl font-black text-emerald-600" : "text-xl font-black text-red-500"}>
-            <span className="mr-1 text-xs text-black/45">{isLivePrice ? "전일 대비" : "예시 등락률"}</span>
+            <span className="mr-1 text-xs text-black/45">{liveQuote ? "전일 대비" : "예시 등락률"}</span>
             {shownChangeRate >= 0 ? "+" : ""}
             {shownChangeRate}%
           </p>
         </div>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Badge tone={stock.aiBadge === "과열 상태" ? "coral" : stock.aiBadge === "관망 구간" ? "yellow" : "green"}>AI 판단: {stock.aiBadge}</Badge>
+          <Badge tone={stock.status === "과열" ? "coral" : stock.status === "조정" ? "yellow" : "green"}>{stock.status}</Badge>
         </div>
         <p className="mt-3 text-sm font-semibold leading-6 text-black/60">{stock.oneLine}</p>
-        <div className="mt-4 grid gap-3">
-          <InfoBox title="왜 지금 보이나요?" body={stock.whyNow} />
-          <InfoBox title="주의할 점" body={stock.riskNote} danger />
-          <InfoBox title="업데이트 규칙" body={stock.updateRule} />
-        </div>
-        <div className="mt-4 rounded-2xl border border-black/5 bg-paper p-3">
-          <p className="text-xs font-black text-black/45">근거 링크</p>
-          <div className="mt-2 space-y-2">
-            {evidenceLinks.slice(0, 3).map((link) => (
-              <EvidenceButton key={link.url} link={link} />
-            ))}
-          </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {(["simple", "standard", "detailed"] as const).map((mode) => (
+            <button key={mode} onClick={() => setViewMode(mode)} className={viewMode === mode ? "h-10 rounded-2xl bg-ink text-xs font-black text-white" : "h-10 rounded-2xl bg-paper text-xs font-black text-black/55"}>
+              {mode === "simple" ? "한눈에 보기" : mode === "standard" ? "기본 보기" : "상세 보기"}
+            </button>
+          ))}
         </div>
       </section>
 
-      <Section title="기본 지표" sub="PER, PBR, EPS, ROE는 [?]를 누르면 쉬운 설명을 볼 수 있어요.">
+      <Section title="이 회사는 뭘 팔아서 돈을 벌까요?">
+        <div className="rounded-3xl bg-white p-5 shadow-soft">
+          <h2 className="text-xl font-black">{companyProfile?.businessSummary ?? "상세 사업 정보 정리 중"}</h2>
+          <p className="mt-3 text-sm font-semibold leading-6 text-black/62">{companyProfile?.easyExplanation ?? "이 회사의 상세 사업 정보는 아직 정리 중입니다."}</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Info title="주요 제품/서비스" items={companyProfile?.mainProducts ?? ["정보 정리 중"]} />
+            <Info title="돈 버는 방식" items={companyProfile?.revenueSources ?? ["공개 자료 확인 후 정리 예정"]} />
+            <Info title="주요 고객/수요처" items={companyProfile?.mainCustomers ?? ["확인 필요"]} />
+            <Info title="산업 태그" items={companyProfile?.industryTags ?? ["정보 정리 중"]} />
+          </div>
+          <p className="mt-4 text-xs font-bold text-black/42">출처: {companyProfile?.dataSource ?? "mock"} · 마지막 정리: {companyProfile?.lastUpdatedAt?.slice(0, 10) ?? "정리 중"}</p>
+        </div>
+      </Section>
+
+      <Section title="기본 지표" sub="PER, PBR, EPS, ROE의 [?]를 누르면 쉬운 설명을 볼 수 있어요.">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Metric title="시가총액" value={shownMarketCap} />
           <TermButton term="PER" value={liveQuote?.formattedPer ?? cleanMetric(stock.per)} />
@@ -141,85 +159,90 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
         </div>
       </Section>
 
-      <Section title="10년 흐름" sub="MVP에서는 예시 그래프와 표로 흐름을 먼저 이해하게 합니다.">
-        <div className="rounded-3xl bg-white p-4 shadow-soft">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="blue">{historical.sector}</Badge>
-            <Badge tone="lemon">MVP 추정 데이터</Badge>
-          </div>
-          <p className="mt-3 text-xs font-bold leading-5 text-black/45">{historical.sourceGuide}</p>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setHistoryOpen((next) => !next)} className="h-12 rounded-2xl bg-ink text-sm font-black text-white">
-              {historyOpen ? "10년 표 닫기" : "10년 표 보기"}
-            </button>
-            <button type="button" onClick={() => setGraphOpen((next) => !next)} className="h-12 rounded-2xl bg-skysoft text-sm font-black text-sky-950">
-              {graphOpen ? "그래프 닫기" : "그래프 표시"}
-            </button>
-          </div>
-          {graphOpen ? <HistoryGraph rows={historical.metrics} /> : null}
-          {historyOpen ? <HistoryTable rows={historical.metrics} /> : null}
-        </div>
-      </Section>
+      {!isSimple ? (
+        <>
+          <Section title="좋은 회사 체크 5개">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["돈을 꾸준히 버는가?", "보통", "실적 흐름과 현금창출력을 함께 봐야 합니다."],
+                ["매출과 이익이 같이 성장하는가?", "보통", "매출 성장만큼 이익률이 따라오는지 확인합니다."],
+                ["부채를 감당할 수 있는가?", "보통", "부채비율과 이자비용을 같이 봅니다."],
+                ["실적 대비 너무 비싼가?", "주의", "기대가 가격에 먼저 반영됐을 수 있습니다."],
+                ["앞으로도 필요한 회사인가?", "좋음", companyProfile?.industryTags.join(", ") || "산업 필요성을 확인합니다."]
+              ].map(([title, grade, body]) => (
+                <article key={title} className="rounded-2xl bg-white p-4 shadow-sm">
+                  <Badge tone={grade === "좋음" ? "green" : grade === "주의" ? "coral" : "yellow"}>{grade}</Badge>
+                  <h3 className="mt-3 text-base font-black">{title}</h3>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-black/60">{body}</p>
+                </article>
+              ))}
+            </div>
+          </Section>
 
-      <Section title="왜 크게 움직였나요?">
-        <div className="space-y-3">
-          {historical.events.map((event) => (
-            <article key={`${event.period}-${event.title}`} className="rounded-2xl bg-white p-4 shadow-sm">
+          <Section title="10년 흐름" sub="MVP에서는 예시 그래프와 흐름 설명으로 먼저 이해를 돕습니다.">
+            <div className="rounded-3xl bg-white p-4 shadow-soft">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={event.impact === "상승" ? "green" : event.impact === "하락" ? "coral" : "gray"}>{event.impact}</Badge>
-                <p className="text-sm font-black text-black/45">{event.period}</p>
+                <Badge tone="blue">{historical.sector}</Badge>
+                <Badge tone="lemon">MVP 예시 데이터</Badge>
               </div>
-              <h3 className="mt-3 text-lg font-black">{event.title}</h3>
-              <p className="mt-2 text-sm font-semibold leading-6 text-black/64">{event.explanation}</p>
-            </article>
-          ))}
-        </div>
-      </Section>
+              <p className="mt-3 text-xs font-bold leading-5 text-black/45">{historical.sourceGuide}</p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setHistoryOpen((next) => !next)} className="h-12 rounded-2xl bg-ink text-sm font-black text-white">
+                  {historyOpen ? "10년 표 닫기" : "10년 표 보기"}
+                </button>
+                <button type="button" onClick={() => setGraphOpen((next) => !next)} className="h-12 rounded-2xl bg-skysoft text-sm font-black text-sky-950">
+                  {graphOpen ? "그래프 닫기" : "그래프 표시"}
+                </button>
+              </div>
+              {graphOpen ? <HistoryGraph rows={historical.metrics} /> : null}
+              {historyOpen ? <HistoryTable rows={historical.metrics} /> : null}
+            </div>
+          </Section>
+        </>
+      ) : null}
 
-      <Section title="AI 분석">
-        <div className="space-y-3">
-          {analysisLabels.map(([key, label]) => (
-            <article key={key} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-              <button type="button" onClick={() => setOpenAnalysisKey((current) => (current === key ? null : key))} className="w-full text-left">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-black text-black/48">{label}</h3>
-                  <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-xs font-black text-black/50">{openAnalysisKey === key ? "근거 닫기" : "근거 보기"}</span>
-                </div>
+      {(isDetailed || viewMode === "standard") ? (
+        <Section title="AI 분석">
+          <div className="space-y-3">
+            {analysisLabels.map(([key, label]) => (
+              <article key={key} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-black text-black/48">{label}</h3>
                 <p className="mt-2 text-base font-semibold leading-7 text-black/72">{stock.analysis[key]}</p>
-              </button>
-              {openAnalysisKey === key ? <AnalysisEvidence ticker={stock.ticker} analysisKey={key} isBuyNow={key === "buyNow"} /> : null}
-            </article>
-          ))}
-        </div>
-      </Section>
+              </article>
+            ))}
+          </div>
+        </Section>
+      ) : null}
 
-      <Section title="뉴스">
-        <div className="space-y-3">
-          {stock.news.map((item) => (
-            <article key={item.title} className="rounded-2xl bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Badge tone={item.sentiment === "긍정" ? "green" : item.sentiment === "부정" ? "coral" : "gray"}>{item.sentiment}</Badge>
-                  <h3 className="mt-3 text-lg font-black">{item.title}</h3>
-                  <p className="mt-1 text-sm font-bold text-black/45">{item.source}</p>
+      {isDetailed ? (
+        <Section title="뉴스">
+          <div className="space-y-3">
+            {stock.news.slice(0, 3).map((item) => (
+              <article key={item.title} className="rounded-2xl bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <Badge tone={item.sentiment === "긍정" ? "green" : item.sentiment === "부정" ? "coral" : "gray"}>{item.sentiment}</Badge>
+                    <h3 className="mt-3 text-lg font-black">{item.title}</h3>
+                    <p className="mt-1 text-sm font-bold text-black/45">{item.source}</p>
+                  </div>
+                  <a href={item.url} target="_blank" rel="noreferrer" aria-label="기사 열기" className="grid size-10 shrink-0 place-items-center rounded-full bg-black/[0.05]">
+                    <ExternalLink size={18} />
+                  </a>
                 </div>
-                <a href={item.url} target="_blank" rel="noreferrer" aria-label="기사 열기" className="grid size-10 shrink-0 place-items-center rounded-full bg-black/[0.05]">
-                  <ExternalLink size={18} />
-                </a>
-              </div>
-              <ul className="mt-3 space-y-1 text-sm font-semibold leading-6 text-black/62">
-                {item.summary.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-              <p className="mt-3 text-xs font-bold leading-5 text-black/42">저작권 보호를 위해 기사 본문을 복제하지 않고, 출처 링크와 자체 작성 요약만 표시합니다.</p>
-            </article>
-          ))}
-        </div>
-      </Section>
+                <ul className="mt-3 space-y-1 text-sm font-semibold leading-6 text-black/62">
+                  {item.summary.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </Section>
+      ) : null}
 
-      <Section title="내 메모" sub="저장 내용은 localStorage에 보관됩니다.">
+      <Section title="내 메모" sub="회원 기록은 이 기기의 localStorage에 저장됩니다.">
         <div className="space-y-3 rounded-3xl bg-white p-4 shadow-soft">
+          {guestMessage ? <p className="rounded-2xl bg-lemon/80 p-3 text-sm font-bold text-yellow-950">둘러보기 중에는 기록이 저장되지 않아요. 내 센스폴리오를 만들면 저장할 수 있습니다.</p> : null}
           <MemoField label="투자 이유" value={note.reason} onChange={(value) => update("reason", value)} />
           <MemoField label="매수 고민 가격" value={note.targetBuyPrice} onChange={(value) => update("targetBuyPrice", value)} />
           <MemoField label="손절 기준" value={note.stopLoss} onChange={(value) => update("stopLoss", value)} />
@@ -232,6 +255,15 @@ export function StockDetailClient({ stock }: { stock: Stock }) {
 
       <ReflectionPanel assetKey={stock.ticker} assetKind="stock" />
     </AppShell>
+  );
+}
+
+function Info({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-2xl bg-paper p-4">
+      <p className="text-xs font-black text-black/45">{title}</p>
+      <p className="mt-2 text-sm font-semibold leading-6 text-black/65">{items.join(", ")}</p>
+    </div>
   );
 }
 
@@ -249,126 +281,44 @@ function cleanMetric(value: string) {
   return value;
 }
 
-function InfoBox({ title, body, danger = false }: { title: string; body: string; danger?: boolean }) {
-  return (
-    <div className={danger ? "rounded-2xl bg-coral/70 p-3" : "rounded-2xl bg-black/[0.035] p-3"}>
-      <p className="text-xs font-black text-black/45">{title}</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-black/68">{body}</p>
-    </div>
-  );
-}
-
-function EvidenceButton({ link }: { link: { title: string; summary: string; url: string; source: string } }) {
-  function openLink() {
-    const ok = window.confirm(`${link.source} 외부 링크로 이동할까요?\n\n${link.summary}`);
-    if (ok) window.open(link.url, "_blank", "noopener,noreferrer");
-  }
-
-  return (
-    <button type="button" onClick={openLink} className="w-full rounded-2xl bg-white p-3 text-left shadow-sm transition hover:bg-skysoft/60">
-      <span className="text-xs font-black text-black/42">{link.source}</span>
-      <span className="mt-1 block text-sm font-black text-ink">{link.title}</span>
-      <span className="mt-1 block text-xs font-semibold leading-5 text-black/56">{link.summary}</span>
-      <span className="mt-2 inline-flex items-center gap-1 text-xs font-black text-sky-800">
-        바로가기 <ExternalLink size={13} />
-      </span>
-    </button>
-  );
-}
-
-function AnalysisEvidence({ ticker, analysisKey, isBuyNow }: { ticker: string; analysisKey: string; isBuyNow?: boolean }) {
-  const links = getAnalysisEvidence(ticker, analysisKey);
-
-  return (
-    <div className="mt-4 rounded-2xl bg-paper p-3">
-      <p className="text-xs font-black text-black/45">왜 이렇게 판단했나요?</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-black/62">이 항목은 최근 뉴스, 공식 공시, 시세 흐름을 함께 확인해서 참고용으로 해석하는 구조입니다. MVP에서는 검증 가능한 링크와 자체 요약을 붙여두었습니다.</p>
-      {isBuyNow ? (
-        <div className="mt-3 rounded-2xl bg-lemon/70 p-3">
-          <p className="text-sm font-black text-yellow-950">지금 사도 되는지 판단 기준</p>
-          <p className="mt-1 text-sm font-semibold leading-6 text-yellow-950/80">현재 가격이 기대를 이미 반영했는지, 실적과 공시가 기대를 뒷받침하는지, 단기 급등 뒤 차익실현 위험이 있는지를 함께 봅니다. 확정 매수 표현 대신 분할 접근, 관망, 확인 같은 보수적 표현을 씁니다.</p>
-        </div>
-      ) : null}
-      <div className="mt-3 space-y-2">
-        {links.map((link) => (
-          <EvidenceButton key={link.url} link={link} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function numberFromText(value: string) {
-  const matched = value.match(/[\d.]+/);
-  return matched ? Number(matched[0]) : 0;
-}
-
-function HistoryGraph({ rows }: { rows: Array<{ year: number; marketCap: string; revenue: string; operatingProfit: string }> }) {
-  const caps = rows.map((row) => numberFromText(row.marketCap));
-  const max = Math.max(...caps, 1);
-
-  return (
-    <div className="mt-4 rounded-2xl bg-paper p-4">
-      <div className="flex h-48 items-end gap-2">
-        {rows.map((row, index) => {
-          const height = Math.max(12, Math.round((caps[index] / max) * 160));
-          return (
-            <div key={row.year} className="flex flex-1 flex-col items-center justify-end gap-2">
-              <div className="w-full rounded-t-xl bg-ink" style={{ height }} title={`${row.year} ${row.marketCap}`} />
-              <span className="text-[10px] font-black text-black/45">{String(row.year).slice(2)}</span>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-3 text-xs font-bold text-black/45">막대는 10년 시가총액 흐름을 단순화한 예시입니다.</p>
-    </div>
-  );
-}
-
-function HistoryTable({ rows }: { rows: Array<{ year: number; marketCap: string; revenue: string; operatingProfit: string; per: string; pbr: string; roe: string; note: string }> }) {
-  return (
-    <div className="mt-4 overflow-x-auto">
-      <table className="w-full min-w-[680px] border-separate border-spacing-y-2 text-left">
-        <thead>
-          <tr className="text-xs font-black text-black/42">
-            <th className="px-3">연도</th>
-            <th className="px-3">시가총액</th>
-            <th className="px-3">매출</th>
-            <th className="px-3">영업이익</th>
-            <th className="px-3">PER</th>
-            <th className="px-3">PBR</th>
-            <th className="px-3">ROE</th>
-            <th className="px-3">해석</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.year} className="rounded-2xl bg-paper text-sm font-bold text-black/68">
-              <td className="rounded-l-2xl px-3 py-3 text-ink">{row.year}</td>
-              <td className="px-3 py-3">{row.marketCap}</td>
-              <td className="px-3 py-3">{row.revenue}</td>
-              <td className="px-3 py-3">{row.operatingProfit}</td>
-              <td className="px-3 py-3">{row.per}</td>
-              <td className="px-3 py-3">{row.pbr}</td>
-              <td className="px-3 py-3">{row.roe}</td>
-              <td className="rounded-r-2xl px-3 py-3">{row.note}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function MemoField({ label, value, onChange, multiline = false }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean }) {
   return (
     <label className="block">
       <span className="text-sm font-black text-black/55">{label}</span>
       {multiline ? (
-        <textarea value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-black/5 bg-paper px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-ink/20" />
+        <textarea value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-24 w-full rounded-2xl bg-paper p-3 font-semibold outline-none" />
       ) : (
-        <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border border-black/5 bg-paper px-4 font-semibold outline-none focus:ring-2 focus:ring-ink/20" />
+        <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-2xl bg-paper px-3 font-semibold outline-none" />
       )}
     </label>
+  );
+}
+
+function HistoryGraph({ rows }: { rows: ReturnType<typeof getHistoricalProfile>["metrics"] }) {
+  const max = Math.max(...rows.map((row) => row.priceIndex));
+  return (
+    <div className="mt-4 flex h-36 items-end gap-1 rounded-2xl bg-paper p-3">
+      {rows.map((row) => (
+        <div key={row.year} className="flex flex-1 flex-col items-center justify-end gap-1">
+          <div className="w-full rounded-t-lg bg-ink" style={{ height: `${Math.max(10, (row.priceIndex / max) * 100)}%` }} />
+          <span className="text-[10px] font-black text-black/40">{String(row.year).slice(2)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HistoryTable({ rows }: { rows: ReturnType<typeof getHistoricalProfile>["metrics"] }) {
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-black/5">
+      {rows.map((row) => (
+        <div key={row.year} className="grid grid-cols-4 gap-2 border-b border-black/5 bg-white p-3 text-xs font-bold last:border-b-0">
+          <span>{row.year}</span>
+          <span>매출 {row.revenue}</span>
+          <span>이익 {row.operatingProfit}</span>
+          <span>지수 {row.priceIndex}</span>
+        </div>
+      ))}
+    </div>
   );
 }

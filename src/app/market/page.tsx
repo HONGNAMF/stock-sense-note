@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
-import { popularStocks, popularStockUpdateGuide } from "@/lib/popular-stocks";
+import { listedCompanies } from "@/lib/listed-companies";
 import { stocks } from "@/lib/mock-data";
 
-const sectors = ["전체", ...Array.from(new Set(popularStocks.map((stock) => stock.sector)))];
+const sectors = ["전체", ...Array.from(new Set(listedCompanies.map((stock) => stock.sector)))];
 
 export default function MarketPage() {
   const [sector, setSector] = useState("전체");
@@ -16,9 +16,9 @@ export default function MarketPage() {
 
   const rows = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return popularStocks.filter((stock) => {
+    return listedCompanies.filter((stock) => {
       const sectorMatch = sector === "전체" || stock.sector === sector;
-      const queryMatch = !normalized || [stock.name, stock.ticker, stock.sector, stock.reason].some((item) => item.toLowerCase().includes(normalized));
+      const queryMatch = !normalized || [stock.companyName, stock.stockCode, stock.sector, ...stock.searchKeywords].some((item) => item.toLowerCase().includes(normalized));
       return sectorMatch && queryMatch;
     });
   }, [sector, query]);
@@ -27,13 +27,13 @@ export default function MarketPage() {
     <AppShell>
       <header>
         <p className="text-sm font-bold text-black/50">월간 시장 피드</p>
-        <h1 className="mt-1 text-3xl font-black text-ink">최근 유명한 종목 100개 한눈에 보기</h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">{popularStockUpdateGuide}</p>
+        <h1 className="mt-1 text-3xl font-black text-ink">유명 종목을 한눈에 보기</h1>
+        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">오늘 급등주가 아니라 최근 30일 흐름과 회사가 무엇을 하는지 중심으로 봅니다.</p>
       </header>
 
       <label className="mt-5 flex h-14 items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 shadow-soft">
         <Search size={20} className="text-black/45" />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="삼성전자, 바이오, 방산..." className="h-full flex-1 bg-transparent font-bold outline-none" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="반도체, 브레이크, CCTV, 체성분..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -49,33 +49,28 @@ export default function MarketPage() {
           <span>순위</span>
           <span>종목</span>
           <span>섹터</span>
-          <span className="hidden sm:block">왜 유명한가</span>
-          <span className="hidden sm:block">위험</span>
+          <span className="hidden sm:block">무엇을 하나요?</span>
+          <span className="hidden sm:block">구분</span>
         </div>
         <div className="space-y-2">
-          {rows.map((row) => {
-            const hasDetail = stocks.some((stock) => stock.ticker === row.ticker);
-            const content = (
-              <article className="grid min-h-16 grid-cols-[44px_1fr_96px] items-center gap-2 rounded-2xl bg-paper px-3 py-2 transition hover:bg-skysoft/60 sm:grid-cols-[56px_1fr_140px_1.2fr_72px]">
-                <p className="text-sm font-black text-black/45">{row.rank}</p>
-                <div>
-                  <h2 className="text-sm font-black text-ink">{row.name}</h2>
-                  <p className="mt-0.5 text-xs font-bold text-black/45">{row.ticker}</p>
-                </div>
-                <p className="text-xs font-black leading-5 text-black/58">{row.sector}</p>
-                <p className="hidden text-xs font-semibold leading-5 text-black/56 sm:block">{row.reason}</p>
-                <div className="hidden sm:block">
-                  <Badge tone={row.risk === "높음" ? "coral" : row.risk === "중간" ? "yellow" : "green"}>{row.risk}</Badge>
-                </div>
-              </article>
-            );
-
-            return hasDetail ? (
-              <Link key={row.ticker} href={`/stocks/${encodeURIComponent(row.ticker)}`} className="block">
-                {content}
+          {rows.map((row, index) => {
+            const hasDetail = stocks.some((stock) => stock.stockCode === row.stockCode || stock.ticker.startsWith(row.stockCode));
+            const href = row.isEtf ? `/etfs/${encodeURIComponent(`${row.stockCode}.KS`)}?fallback=1&name=${encodeURIComponent(row.companyName)}` : `/stocks/${encodeURIComponent(`${row.stockCode}.KRX`)}?fallback=1&name=${encodeURIComponent(row.companyName)}&sector=${encodeURIComponent(row.sector)}`;
+            return (
+              <Link key={row.stockCode} href={hasDetail ? `/stocks/${encodeURIComponent(stocks.find((stock) => stock.stockCode === row.stockCode || stock.ticker.startsWith(row.stockCode))?.ticker ?? `${row.stockCode}.KRX`)}` : href} className="block">
+                <article className="grid min-h-16 grid-cols-[44px_1fr_96px] items-center gap-2 rounded-2xl bg-paper px-3 py-2 transition hover:bg-skysoft/60 sm:grid-cols-[56px_1fr_140px_1.2fr_72px]">
+                  <p className="text-sm font-black text-black/45">{index + 1}</p>
+                  <div>
+                    <h2 className="text-sm font-black text-ink">{row.companyName}</h2>
+                    <p className="mt-0.5 text-xs font-bold text-black/45">{row.stockCode}</p>
+                  </div>
+                  <p className="text-xs font-black leading-5 text-black/58">{row.sector}</p>
+                  <p className="hidden text-xs font-semibold leading-5 text-black/56 sm:block">{row.searchKeywords.slice(0, 3).join(", ")}</p>
+                  <div className="hidden sm:block">
+                    <Badge tone={row.isEtf ? "blue" : "lemon"}>{row.isEtf ? "ETF" : row.market}</Badge>
+                  </div>
+                </article>
               </Link>
-            ) : (
-              <div key={row.ticker}>{content}</div>
             );
           })}
         </div>

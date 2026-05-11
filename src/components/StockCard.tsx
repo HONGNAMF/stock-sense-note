@@ -49,8 +49,8 @@ export function StockCard({ stock }: { stock: Stock }) {
         <p className="mt-3 min-h-10 text-sm leading-5 text-black/62">{stock.oneLine}</p>
 
         <div className="mt-3 rounded-xl bg-black/[0.035] p-3">
-          <p className="text-xs font-black text-black/45">왜 지금 보이나요?</p>
-          <p className="mt-1 text-sm font-semibold leading-5 text-black/64">{stock.whyNow}</p>
+          <p className="text-xs font-black text-black/45">이 회사는 뭘 하나요?</p>
+          <p className="mt-1 text-sm font-semibold leading-5 text-black/64">{stock.companyProfile?.businessSummary ?? "상세 사업 정보 정리 중"}</p>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -63,12 +63,12 @@ export function StockCard({ stock }: { stock: Stock }) {
 
         <div className="mt-4 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-black/45">{priceLoading ? "시세 확인 중" : liveQuote?.realtime ? "실시간 시세" : liveQuote ? "지연 시세" : "시세 확인 필요"}</p>
+            <p className="text-xs font-bold text-black/45">{priceLoading ? "시세 확인 중" : liveQuote?.realtime ? "실시간 시세" : liveQuote ? "지연 시세" : "MVP 예시 가격"}</p>
             <p className="text-lg font-black">{shownPrice}</p>
           </div>
           <div className={isUp ? "flex items-center gap-1 font-black text-emerald-600" : "flex items-center gap-1 font-black text-red-500"}>
             <TrendIcon size={18} />
-            <span className="text-xs text-black/45">{liveQuote ? "전일 대비" : "등락률 확인 필요"}</span>
+            <span className="text-xs text-black/45">{liveQuote ? "전일 대비" : "예시 등락률"}</span>
             {isUp ? "+" : ""}
             {shownChangeRate}%
           </div>
@@ -79,6 +79,6 @@ export function StockCard({ stock }: { stock: Stock }) {
 }
 
 function cleanPrice(value: string) {
-  if (!value || value.includes("예시") || value.includes("MVP")) return "시세 확인 필요";
+  if (!value || value.includes("예시") || value.includes("MVP")) return "MVP 예시 가격";
   return value;
 }

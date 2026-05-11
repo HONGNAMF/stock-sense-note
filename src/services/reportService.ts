@@ -3,8 +3,8 @@ import type { TradeRecord } from "@/types/investment";
 export const reportService = {
   monthlySummary: (trades: TradeRecord[]) => ({
     title: "이번 달 투자 복기",
-    summary: trades.length ? "이번 달 기록을 남기면 판단 흐름을 확인할 수 있습니다." : "아직 거래 기록이 없어 관심종목과 판단 기록 중심으로 복기합니다.",
-    feedback: "충동적인 결정보다, 내가 왜 보고 왜 샀는지를 남기는 습관이 가장 중요합니다.",
+    summary: trades.length ? "이번 달 기록을 기준으로 판단 흐름을 확인할 수 있습니다." : "아직 거래 기록이 없어 관심종목과 판단 기록 중심으로 복기합니다.",
+    feedback: "충동적인 결정은 줄이고, 내가 왜 보고 있는지와 매도 기준을 먼저 남기는 습관이 중요합니다.",
     buys: trades.filter((trade) => trade.tradeType === "매수").length,
     sells: trades.filter((trade) => trade.tradeType === "매도").length
   }),

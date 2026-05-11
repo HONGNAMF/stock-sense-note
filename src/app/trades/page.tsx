@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { journalService } from "@/services/journalService";
@@ -7,6 +8,7 @@ import type { TradeRecord } from "@/types/investment";
 
 export default function TradesPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
+  const [guestMessage, setGuestMessage] = useState(false);
   const [form, setForm] = useState<Omit<TradeRecord, "id" | "createdAt">>({
     assetKey: "005930.KS",
     assetName: "삼성전자",
@@ -25,7 +27,11 @@ export default function TradesPage() {
   useEffect(() => setTrades(journalService.getTrades()), []);
 
   function save() {
-    journalService.saveTrade({ ...form, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+    const ok = journalService.saveTrade({ ...form, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+    if (!ok) {
+      setGuestMessage(true);
+      return;
+    }
     setTrades(journalService.getTrades());
   }
 
@@ -36,6 +42,14 @@ export default function TradesPage() {
         <h1 className="mt-1 text-3xl font-black text-ink">실행과 복기를 연결해요</h1>
       </header>
       <section className="mt-5 grid gap-3 rounded-3xl bg-white p-5 shadow-soft">
+        {guestMessage ? (
+          <div className="rounded-2xl bg-lemon/80 p-4 text-sm font-bold text-yellow-950">
+            이 기능은 내 센스폴리오를 만든 후 사용할 수 있어요.
+            <Link href="/onboarding" className="mt-3 block rounded-xl bg-ink px-3 py-2 text-center text-xs font-black text-white">
+              회원가입하기
+            </Link>
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-2">
           {(["매수", "매도"] as const).map((type) => (
             <button key={type} onClick={() => setForm({ ...form, tradeType: type })} className={form.tradeType === type ? "h-11 rounded-2xl bg-ink font-black text-white" : "h-11 rounded-2xl bg-paper font-black"}>{type}</button>

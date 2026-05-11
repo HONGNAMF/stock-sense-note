@@ -23,14 +23,7 @@ export function BottomNav() {
           const active = pathname === item.href;
           const Icon = item.icon;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                "tap-highlight flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition",
-                active ? "bg-ink text-white" : "text-black/55 hover:bg-black/[0.04] hover:text-ink"
-              )}
-            >
+            <Link key={item.href} href={item.href} className={clsx("tap-highlight flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition", active ? "bg-ink text-white" : "text-black/55 hover:bg-black/[0.04] hover:text-ink")}>
               <Icon size={18} strokeWidth={2.2} />
               <span>{item.label}</span>
             </Link>

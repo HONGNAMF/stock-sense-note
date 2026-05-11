@@ -70,7 +70,7 @@ export default async function EtfDetailPage({
           <a key={item.title} href={item.url} target="_blank" rel="noreferrer" className="mt-3 block rounded-2xl bg-paper p-4">
             <Badge tone={item.sentiment === "긍정" ? "green" : item.sentiment === "부정" ? "coral" : "gray"}>{item.sentiment}</Badge>
             <h3 className="mt-2 font-black">{item.title}</h3>
-            <p className="mt-1 text-sm font-semibold leading-6 text-black/60">{item.summary}</p>
+            <p className="mt-1 text-sm font-semibold leading-6 text-black/60">{item.summary.join(" ")}</p>
           </a>
         ))}
       </section>

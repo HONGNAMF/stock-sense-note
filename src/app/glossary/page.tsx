@@ -11,13 +11,13 @@ export default function GlossaryPage() {
   const results = useMemo(() => glossaryService.search(query), [query]);
 
   useEffect(() => {
-    setRecent(JSON.parse(localStorage.getItem("haeseok-note:v2:recent-terms") ?? "[]"));
+    setRecent(JSON.parse(localStorage.getItem("sensefolio:v1:recent-terms") ?? "[]"));
   }, []);
 
   function remember(term: string) {
     const next = [term, ...recent.filter((item) => item !== term)].slice(0, 6);
     setRecent(next);
-    localStorage.setItem("haeseok-note:v2:recent-terms", JSON.stringify(next));
+    localStorage.setItem("sensefolio:v1:recent-terms", JSON.stringify(next));
   }
 
   return (

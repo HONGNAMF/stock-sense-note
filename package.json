@@ -1,5 +1,6 @@
 {
-  "name": "stock-sense-note",
+  "name": "sensefolio",
+  "description": "센스폴리오: 내 투자 감각을 키우는 개인 투자노트",
   "version": "0.1.0",
   "private": true,
   "scripts": {

@@ -5,14 +5,15 @@ export type AssetKind = "stock" | "etf";
 
 export type LocalProfile = {
   localUserId: string;
-  name: string;
-  birthDate?: string;
+  nickname: string;
+  name?: string;
   profileImageUrl?: string;
   interests: string[];
   watchSymbols: string[];
   investorSummary?: string;
   viewMode: ViewMode;
   onboardingCompleted: boolean;
+  isGuest?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -77,5 +78,5 @@ export type Etf = {
   countries: Array<{ name: string; weight: number }>;
   comparison: string;
   risks: string[];
-  news: Array<{ title: string; source: string; url: string; summary: string; sentiment: "긍정" | "중립" | "부정" }>;
+  news: Array<{ title: string; source: string; url: string; summary: string[]; sentiment: "긍정" | "중립" | "부정" }>;
 };

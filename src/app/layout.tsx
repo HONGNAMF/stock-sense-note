@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { APP_DESCRIPTION, APP_DISPLAY_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "센스폴리오 | Sensefolio",
-  description: "내 투자 감각을 키우는 개인 투자노트"
+  title: `${APP_DISPLAY_NAME} | ${APP_TAGLINE}`,
+  description: APP_DESCRIPTION
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

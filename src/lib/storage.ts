@@ -1,12 +1,14 @@
 "use client";
 
 import type { StockNote, UserProfile, WatchTag } from "@/types";
+import { GUEST_ID } from "@/lib/brand";
+import { profileService } from "@/services/profileService";
 
 const keys = {
-  profile: "haeseok-note:profile",
-  favorites: "haeseok-note:favorites",
-  notes: "haeseok-note:notes",
-  tags: "haeseok-note:tags"
+  legacyProfile: "sensefolio:v1:legacy-profile",
+  favorites: "sensefolio:v1:favorites",
+  notes: "sensefolio:v1:notes",
+  tags: "sensefolio:v1:tags"
 };
 
 function readJson<T>(key: string, fallback: T): T {
@@ -24,26 +26,57 @@ function writeJson<T>(key: string, value: T) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+function currentUserId() {
+  return profileService.getCurrentProfileId();
+}
+
+function scopedKey(base: string) {
+  const id = currentUserId();
+  if (!id || id === GUEST_ID) return null;
+  return `${base}:${id}`;
+}
+
 export const storage = {
-  getProfile: () => readJson<UserProfile | null>(keys.profile, null),
-  setProfile: (profile: UserProfile) => writeJson(keys.profile, profile),
-  getFavorites: () => readJson<string[]>(keys.favorites, []),
-  setFavorites: (tickers: string[]) => writeJson(keys.favorites, tickers),
+  isGuest: () => currentUserId() === GUEST_ID,
+  getProfile: () => readJson<UserProfile | null>(keys.legacyProfile, null),
+  setProfile: (profile: UserProfile) => writeJson(keys.legacyProfile, profile),
+  getFavorites: () => {
+    const key = scopedKey(keys.favorites);
+    return key ? readJson<string[]>(key, []) : [];
+  },
+  setFavorites: (tickers: string[]) => {
+    const key = scopedKey(keys.favorites);
+    if (key) writeJson(key, tickers);
+  },
   toggleFavorite: (ticker: string) => {
+    const key = scopedKey(keys.favorites);
+    if (!key) return storage.getFavorites();
     const favorites = storage.getFavorites();
     const next = favorites.includes(ticker) ? favorites.filter((item) => item !== ticker) : [...favorites, ticker];
-    storage.setFavorites(next);
+    writeJson(key, next);
     return next;
   },
-  getNotes: () => readJson<Record<string, StockNote>>(keys.notes, {}),
+  getNotes: () => {
+    const key = scopedKey(keys.notes);
+    return key ? readJson<Record<string, StockNote>>(key, {}) : {};
+  },
   getNote: (ticker: string) => storage.getNotes()[ticker],
   saveNote: (note: StockNote) => {
+    const key = scopedKey(keys.notes);
+    if (!key) return false;
     const notes = storage.getNotes();
-    writeJson(keys.notes, { ...notes, [note.ticker]: note });
+    writeJson(key, { ...notes, [note.ticker]: note });
+    return true;
   },
-  getTags: () => readJson<Record<string, WatchTag>>(keys.tags, {}),
+  getTags: () => {
+    const key = scopedKey(keys.tags);
+    return key ? readJson<Record<string, WatchTag>>(key, {}) : {};
+  },
   setTag: (ticker: string, tag: WatchTag) => {
+    const key = scopedKey(keys.tags);
+    if (!key) return false;
     const tags = storage.getTags();
-    writeJson(keys.tags, { ...tags, [ticker]: tag });
+    writeJson(key, { ...tags, [ticker]: tag });
+    return true;
   }
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { APP_NAME_KO } from "@/lib/brand";
 import { journalService } from "@/services/journalService";
 import { reportService } from "@/services/reportService";
 import type { TradeRecord } from "@/types/investment";
@@ -15,7 +16,7 @@ export default function ReportsPage() {
   return (
     <AppShell>
       <header>
-        <p className="text-sm font-bold text-black/50">리포트</p>
+        <p className="text-sm font-bold text-black/50">{APP_NAME_KO} 리포트</p>
         <h1 className="mt-1 text-3xl font-black text-ink">월간 / 분기 복기</h1>
       </header>
       <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">

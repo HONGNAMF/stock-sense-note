@@ -13,10 +13,12 @@ import type { WatchTag } from "@/types";
 export default function WatchlistPage() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [tags, setTags] = useState<Record<string, WatchTag>>({});
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     setFavorites(storage.getFavorites());
     setTags(storage.getTags());
+    setIsGuest(storage.isGuest());
   }, []);
 
   const list = stocks.filter((stock) => favorites.includes(stock.ticker));
@@ -31,7 +33,7 @@ export default function WatchlistPage() {
       <header>
         <p className="text-sm font-bold text-black/50">관심종목</p>
         <h1 className="mt-1 text-3xl font-black text-ink">하트를 누른 종목</h1>
-        <p className="mt-2 text-sm font-semibold text-black/55">{list.length}개 저장됨</p>
+        <p className="mt-2 text-sm font-semibold text-black/55">{isGuest ? "둘러보기 중에는 관심종목이 저장되지 않아요." : `${list.length}개 저장됨`}</p>
       </header>
 
       {list.length ? (
@@ -42,16 +44,7 @@ export default function WatchlistPage() {
               <div className="mt-3 flex flex-wrap items-center gap-2 px-1 pb-1">
                 <Badge tone={stock.status === "과열" ? "coral" : stock.status === "조정" ? "yellow" : "green"}>{stock.status}</Badge>
                 {watchTags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setTag(stock.ticker, tag)}
-                    className={
-                      tags[stock.ticker] === tag
-                        ? "rounded-full bg-ink px-3 py-1.5 text-xs font-black text-white"
-                        : "rounded-full bg-black/[0.05] px-3 py-1.5 text-xs font-black text-black/55"
-                    }
-                  >
+                  <button key={tag} type="button" onClick={() => setTag(stock.ticker, tag)} className={tags[stock.ticker] === tag ? "rounded-full bg-ink px-3 py-1.5 text-xs font-black text-white" : "rounded-full bg-black/[0.05] px-3 py-1.5 text-xs font-black text-black/55"}>
                     {tag}
                   </button>
                 ))}

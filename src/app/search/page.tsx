@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -8,171 +8,37 @@ import { Badge } from "@/components/Badge";
 import { StockCard } from "@/components/StockCard";
 import { etfs } from "@/lib/etf-data";
 import { stocks } from "@/lib/mock-data";
-import { popularStocks } from "@/lib/popular-stocks";
-
-type SearchRow = {
-  key: string;
-  name: string;
-  ticker: string;
-  kind: "상세 종목" | "KRX" | "시장 피드" | "ETF" | "KRX ETF";
-  sector: string;
-  reason: string;
-  href?: string;
-  risk?: "낮음" | "중간" | "높음";
-};
+import { searchListedCompanies } from "@/lib/listed-companies";
+import { companyProfileService } from "@/services/companyProfileService";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
-  const [krxStocks, setKrxStocks] = useState<Array<{ code: string; name: string; shortName: string; market: string; securityType: string; industry?: string; product?: string }>>([]);
-  const [krxEtfs, setKrxEtfs] = useState<Array<{ code: string; name: string; issuer: string; market: string }>>([]);
-  const [krxLoading, setKrxLoading] = useState(true);
-  const [etfLoading, setEtfLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/krx/stocks", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data) => {
-        if (!alive) return;
-        setKrxStocks(Array.isArray(data.stocks) ? data.stocks : []);
-      })
-      .catch(() => {
-        if (alive) setKrxStocks([]);
-      })
-      .finally(() => {
-        if (alive) setKrxLoading(false);
-      });
-
-    fetch("/api/krx/etfs", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data) => {
-        if (!alive) return;
-        setKrxEtfs(Array.isArray(data.etfs) ? data.etfs : []);
-      })
-      .catch(() => {
-        if (alive) setKrxEtfs([]);
-      })
-      .finally(() => {
-        if (alive) setEtfLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  function withQuery(path: string, values: Record<string, string | undefined>) {
-    const params = new URLSearchParams();
-    Object.entries(values).forEach(([key, value]) => {
-      if (value) params.set(key, value);
-    });
-    const queryString = params.toString();
-    return queryString ? `${path}?${queryString}` : path;
-  }
-
-  const rows = useMemo<SearchRow[]>(() => {
-    const detailed = stocks.map((stock) => ({
-      key: `stock-${stock.ticker}`,
-      name: stock.name,
-      ticker: stock.ticker,
-      kind: "상세 종목" as const,
-      sector: stock.category,
-      reason: stock.whyNow,
-      href: `/stocks/${encodeURIComponent(stock.ticker)}`,
-      risk: stock.status === "과열" ? "높음" as const : "중간" as const
-    }));
-
-    const krxRows = krxStocks
-      .filter((item) => !stocks.some((stock) => stock.ticker.startsWith(item.code)))
-      .map((item) => ({
-        key: `krx-${item.code}`,
-        name: item.shortName || item.name,
-        ticker: item.code,
-        kind: "KRX" as const,
-        sector: [item.market, item.industry].filter(Boolean).join(" · "),
-        reason: item.product ? `주요제품: ${item.product}` : "KRX 상장법인목록에서 불러온 한국 상장회사입니다. 상세 해석은 실제 종목 API 연결 후 확장됩니다.",
-        href: withQuery(`/stocks/${encodeURIComponent(`${item.code}.KRX`)}`, {
-          fallback: "1",
-          name: item.shortName || item.name,
-          sector: [item.market, item.industry].filter(Boolean).join(" · "),
-          product: item.product
-        }),
-        risk: "중간" as const
-      }));
-
-    const feed = popularStocks
-      .filter((item) => !stocks.some((stock) => stock.ticker === item.ticker) && !krxStocks.some((stock) => `${stock.code}.KS` === item.ticker || `${stock.code}.KQ` === item.ticker || stock.code === item.ticker))
-      .map((item) => ({
-        key: `feed-${item.ticker}`,
-        name: item.name,
-        ticker: item.ticker,
-        kind: "시장 피드" as const,
-        sector: item.sector,
-        reason: item.reason,
-        href: withQuery(`/stocks/${encodeURIComponent(item.ticker)}`, {
-          fallback: "1",
-          name: item.name,
-          sector: item.sector,
-          reason: item.reason
-        }),
-        risk: item.risk
-      }));
-
-    const etfRows = etfs.map((etf) => ({
-      key: `etf-${etf.symbol}`,
-      name: etf.name,
-      ticker: etf.symbol,
-      kind: "ETF" as const,
-      sector: etf.character,
-      reason: etf.oneLine,
-      href: `/etfs/${encodeURIComponent(etf.symbol)}`,
-      risk: etf.risk
-    }));
-
-    const krxEtfRows = krxEtfs
-      .filter((item) => !etfs.some((etf) => etf.symbol.startsWith(item.code)))
-      .map((item) => ({
-        key: `krx-etf-${item.code}`,
-        name: item.name,
-        ticker: item.code,
-        kind: "KRX ETF" as const,
-        sector: item.issuer || item.market,
-        reason: "KRX ETF 목록에서 불러온 ETF입니다. 클릭하면 기본 ETF 해석 화면으로 먼저 볼 수 있습니다.",
-        href: withQuery(`/etfs/${encodeURIComponent(`${item.code}.KS`)}`, {
-          fallback: "1",
-          name: item.name,
-          issuer: item.issuer
-        }),
-        risk: "중간" as const
-      }));
-
-    const merged = [...detailed, ...krxRows, ...feed, ...etfRows, ...krxEtfRows];
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return merged;
-
-    return merged.filter((row) =>
-      [row.name, row.ticker, row.kind, row.sector, row.reason].some((text) => text.toLowerCase().includes(normalized))
-    );
-  }, [query, krxStocks, krxEtfs]);
 
   const detailedStocks = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return stocks;
-    return stocks.filter((stock) => [stock.name, stock.ticker, stock.category, ...stock.interests].some((item) => item.toLowerCase().includes(normalized)));
+    return stocks.filter((stock) => [stock.name, stock.ticker, stock.category, stock.sector ?? "", ...(stock.searchKeywords ?? []), ...stock.interests].some((item) => item.toLowerCase().includes(normalized)));
+  }, [query]);
+
+  const listedRows = useMemo(() => searchListedCompanies(query), [query]);
+  const etfRows = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return etfs;
+    return etfs.filter((etf) => [etf.name, etf.symbol, etf.character, etf.oneLine, etf.issuer].some((item) => item.toLowerCase().includes(normalized)));
   }, [query]);
 
   return (
     <AppShell>
       <header>
         <p className="text-sm font-bold text-black/50">검색</p>
-        <h1 className="mt-1 text-3xl font-black text-ink">KRX 상장회사 전체를 찾아요</h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">한국 주식과 ETF는 KRX 기본정보를 요청해 검색하고, 해외주식은 MVP 데이터와 함께 보여줍니다.</p>
+        <h1 className="mt-1 text-3xl font-black text-ink">상장사와 ETF를 한 번에 찾아요</h1>
+        <p className="mt-2 text-sm font-semibold leading-6 text-black/55">종목명, 종목코드, 업종, 제품 키워드로 검색할 수 있습니다. MVP에는 seed/import 구조와 주요 예시 데이터가 포함되어 있어요.</p>
       </header>
 
       <Link href="/market" className="mt-5 block rounded-3xl bg-ink p-5 text-white shadow-soft">
         <p className="text-sm font-bold text-white/55">시장 피드</p>
-        <h2 className="mt-1 text-xl font-black">유명 종목 100개 한눈에 보기</h2>
-        <p className="mt-2 text-sm font-semibold leading-6 text-white/70">섹터별로 나누고, 왜 유명한지와 위험도를 같이 봅니다.</p>
+        <h2 className="mt-1 text-xl font-black">유명 종목을 한눈에 보기</h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-white/70">최근 30일 흐름과 과열 주의 종목을 함께 봅니다.</p>
       </Link>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -182,17 +48,12 @@ export default function SearchPage() {
 
       <label className="mt-5 flex h-14 items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 shadow-soft">
         <Search size={20} className="text-black/45" />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="삼성전기, 한미반도체, 현대차, QQQ..." className="h-full flex-1 bg-transparent font-bold outline-none" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="브레이크, CCTV, 체성분, MLCC, 삼성전자..." className="h-full flex-1 bg-transparent font-bold outline-none" />
       </label>
-      <p className="mt-2 text-xs font-bold text-black/42">
-        {krxLoading ? "KRX 상장회사 전체를 불러오는 중입니다." : krxStocks.length ? `KRX 상장회사 ${krxStocks.length.toLocaleString()}개 검색 가능` : "KRX 주식 연결에 실패하면 MVP 시장 피드로 검색합니다."}
-        {" · "}
-        {etfLoading ? "ETF 목록 불러오는 중" : krxEtfs.length ? `KRX ETF ${krxEtfs.length.toLocaleString()}개 검색 가능` : "ETF는 MVP 목록 우선 표시"}
-      </p>
 
       {detailedStocks.length ? (
         <section className="mt-5">
-          <h2 className="text-xl font-black">상세 페이지가 있는 종목</h2>
+          <h2 className="text-xl font-black">상세 해석이 준비된 종목</h2>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {detailedStocks.map((stock) => (
               <StockCard key={stock.ticker} stock={stock} />
@@ -202,35 +63,43 @@ export default function SearchPage() {
       ) : null}
 
       <section className="mt-7">
-        <h2 className="text-xl font-black">전체 검색 결과 {rows.length.toLocaleString()}개</h2>
+        <h2 className="text-xl font-black">상장사 검색 결과 {listedRows.length.toLocaleString()}개</h2>
         <div className="mt-3 grid gap-2">
-          {rows.map((row) => {
-            const card = (
-              <article className="rounded-3xl bg-white p-4 shadow-sm">
+          {listedRows.map((row) => {
+            const profile = companyProfileService.getOrCreateMockProfile(`${row.stockCode}.KRX`, row.companyName, row.sector);
+            const href = row.isEtf ? `/etfs/${encodeURIComponent(`${row.stockCode}.KS`)}?fallback=1&name=${encodeURIComponent(row.companyName)}` : `/stocks/${encodeURIComponent(`${row.stockCode}.KRX`)}?fallback=1&name=${encodeURIComponent(row.companyName)}&sector=${encodeURIComponent(row.sector)}`;
+            return (
+              <Link key={row.stockCode} href={href} className="block rounded-3xl bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-black text-black/45">{row.ticker}</p>
-                    <h3 className="mt-1 text-lg font-black text-ink">{row.name}</h3>
+                    <p className="text-sm font-black text-black/45">{row.stockCode}</p>
+                    <h3 className="mt-1 text-lg font-black text-ink">{row.companyName}</h3>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <Badge tone={row.kind === "ETF" || row.kind === "KRX ETF" ? "blue" : row.kind === "상세 종목" ? "green" : row.kind === "KRX" ? "lemon" : "gray"}>{row.kind}</Badge>
-                    {row.risk ? <Badge tone={row.risk === "높음" ? "coral" : row.risk === "중간" ? "yellow" : "green"}>{row.risk}</Badge> : null}
-                  </div>
+                  <Badge tone={row.isEtf ? "blue" : "lemon"}>{row.isEtf ? "ETF" : row.market}</Badge>
                 </div>
                 <p className="mt-2 text-xs font-black text-black/45">{row.sector}</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-black/62">{row.reason}</p>
-                <p className="mt-2 text-xs font-bold text-black/42">{row.href ? "클릭하면 자세히 보기로 이동합니다." : "상세 페이지는 이후 실제 종목 API 연결 시 확장됩니다."}</p>
-              </article>
-            );
-
-            return row.href ? (
-              <Link key={row.key} href={row.href}>
-                {card}
+                <p className="mt-2 text-sm font-semibold leading-6 text-black/62">{profile.businessSummary}</p>
               </Link>
-            ) : (
-              <div key={row.key}>{card}</div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="mt-7">
+        <h2 className="text-xl font-black">ETF 검색 결과 {etfRows.length.toLocaleString()}개</h2>
+        <div className="mt-3 grid gap-2">
+          {etfRows.map((etf) => (
+            <Link key={etf.symbol} href={`/etfs/${encodeURIComponent(etf.symbol)}`} className="block rounded-3xl bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-black/45">{etf.symbol}</p>
+                  <h3 className="mt-1 text-lg font-black text-ink">{etf.name}</h3>
+                </div>
+                <Badge tone="blue">ETF</Badge>
+              </div>
+              <p className="mt-2 text-sm font-semibold leading-6 text-black/62">{etf.oneLine}</p>
+            </Link>
+          ))}
         </div>
       </section>
     </AppShell>
