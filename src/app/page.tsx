@@ -12,6 +12,7 @@ import { marketContext, marketSummary, stocks } from "@/lib/mock-data";
 import { profileGuide } from "@/lib/analysis";
 import { storage } from "@/lib/storage";
 import { profileService } from "@/services/profileService";
+import { recommendationService, type RecommendationCandidate, type RecommendationSectionId } from "@/services/recommendationService";
 import type { LocalProfile } from "@/types/investment";
 
 type LoginState = "idle" | "not-found";
@@ -22,6 +23,7 @@ export default function HomePage() {
   const [loginName, setLoginName] = useState("");
   const [loginState, setLoginState] = useState<LoginState>("idle");
   const [booted, setBooted] = useState(false);
+  const [expandedRecommendations, setExpandedRecommendations] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setLocalProfile(profileService.getProfile());
@@ -29,17 +31,8 @@ export default function HomePage() {
     setBooted(true);
   }, []);
 
-  const monthlyInterestMatches = useMemo(() => {
-    if (!localProfile?.interests.length) return stocks.slice(0, 3);
-    const joined = localProfile.interests.join(" ");
-    return stocks.filter((stock) => stock.interests.some((interest) => joined.includes(interest))).slice(0, 4);
-  }, [localProfile]);
-
-  const recentStocks = stocks.slice(0, 3);
+  const recommendationSections = useMemo(() => recommendationService.buildSections(localProfile), [localProfile]);
   const monthlyEtfCopy = "ETF는 개별 회사보다 넓게 담는 도구예요. 월간 흐름은 ETF 상세에서 구성 종목과 섹터를 함께 봅니다.";
-  const quietGrowthStocks = stocks.filter((stock) => stock.category === "조용히 성장 중인 종목").slice(0, 3);
-  const overlookedStocks = stocks.filter((stock) => stock.category === "실적은 괜찮지만 소외된 종목").slice(0, 3);
-  const overheatedStocks = stocks.filter((stock) => stock.status === "과열").slice(0, 3);
 
   function login() {
     const found = profileService.findProfile(loginName);
@@ -190,27 +183,45 @@ export default function HomePage() {
         <p className="mt-3 text-xs font-bold text-white/45">업데이트 기준: {marketContext.lastUpdated}</p>
       </section>
 
-      <Section title="최근 30일 주목 종목">
-        <StockGrid title="recent" list={recentStocks} />
-      </Section>
+      <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">
+        <div className="flex flex-wrap gap-2">
+          <Badge tone="blue">전체 상장사 기반 구조</Badge>
+          <Badge tone="gray">태그 점수 계산</Badge>
+        </div>
+        <h2 className="mt-3 text-lg font-black">추천은 고정 예시가 아니라 후보군에서 계산합니다.</h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-black/60">
+          KOSPI, KOSDAQ, 국내 ETF, 해외 주요 주식·ETF 후보에 관심사, 사업 내용, 투자습관, 최근 30일 흐름, 리스크 점수를 더해 보여줍니다. MVP에서는 seed/import 데이터와 mock 흐름을 사용하고, 실제 서비스에서는 KRX·DART·뉴스·시세 API로 교체합니다.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Link href="/search" className="rounded-2xl bg-paper p-3 text-center text-xs font-black">직접 검색하기</Link>
+          <Link href="/market" className="rounded-2xl bg-paper p-3 text-center text-xs font-black">비슷한 회사 더 보기</Link>
+          <Link href="/etfs" className="rounded-2xl bg-paper p-3 text-center text-xs font-black">ETF로 보기</Link>
+          <button
+            onClick={() => setExpandedRecommendations((current) => ({ ...current, etf: true }))}
+            className="rounded-2xl bg-paper p-3 text-center text-xs font-black"
+          >
+            리스크 낮은 후보만 보기
+          </button>
+        </div>
+      </section>
+
+      {recommendationSections.map((section) => (
+        <Section key={section.id} title={section.title} sub={section.description}>
+          <RecommendationGrid
+            sectionId={section.id}
+            candidates={section.candidates}
+            expanded={Boolean(expandedRecommendations[section.id])}
+            emptyMessage={section.emptyMessage}
+            onToggle={() => setExpandedRecommendations((current) => ({ ...current, [section.id]: !current[section.id] }))}
+          />
+        </Section>
+      ))}
 
       <Section title="월간 관심 ETF" sub={monthlyEtfCopy}>
         <Link href="/etfs" className="block rounded-3xl bg-white p-5 shadow-soft">
           <p className="text-lg font-black">ETF 구성 종목과 섹터 비중 보러가기</p>
           <p className="mt-2 text-sm font-semibold leading-6 text-black/55">국내 ETF 8개와 해외 ETF 8개 mock 상세를 볼 수 있어요.</p>
         </Link>
-      </Section>
-
-      <Section title="조용히 성장 중인 종목">
-        <StockGrid title="quiet" list={quietGrowthStocks} />
-      </Section>
-
-      <Section title="실적은 괜찮지만 소외된 종목">
-        <StockGrid title="overlooked" list={overlookedStocks} />
-      </Section>
-
-      <Section title="과열 주의 종목" sub="최근 한 달간 많이 올랐거나 거래량이 크게 늘어 주의해서 볼 필요가 있는 종목입니다.">
-        <StockGrid title="overheated" list={overheatedStocks} />
       </Section>
 
       <Section title={`${localProfile.nickname || localProfile.name}님이 매수한 종목`} sub="매수/매도 기록을 남기면 월간 리포트에 반영됩니다.">
@@ -260,5 +271,93 @@ function StockGrid({ title, list }: { title: string; list: typeof stocks }) {
         <StockCard key={`${title}-${stock.ticker}`} stock={stock} />
       ))}
     </div>
+  );
+}
+
+function RecommendationGrid({
+  sectionId,
+  candidates,
+  expanded,
+  emptyMessage,
+  onToggle
+}: {
+  sectionId: RecommendationSectionId;
+  candidates: RecommendationCandidate[];
+  expanded: boolean;
+  emptyMessage?: string;
+  onToggle: () => void;
+}) {
+  const visible = expanded ? candidates.slice(0, 10) : candidates.slice(0, 3);
+
+  if (!candidates.length) {
+    return (
+      <div className="rounded-3xl bg-white p-5 shadow-soft">
+        <p className="text-sm font-bold leading-6 text-black/60">{emptyMessage ?? "조건에 맞는 후보를 더 모으는 중입니다."}</p>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <Link href="/search" className="rounded-2xl bg-paper p-3 text-center text-xs font-black">직접 검색</Link>
+          <Link href="/market" className="rounded-2xl bg-paper p-3 text-center text-xs font-black">비슷한 회사</Link>
+          <Link href="/etfs" className="rounded-2xl bg-paper p-3 text-center text-xs font-black">ETF 보기</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {visible.map((candidate) => (
+          <RecommendationCard key={`${sectionId}-${candidate.id}`} candidate={candidate} />
+        ))}
+      </div>
+      {candidates.length > 3 ? (
+        <button onClick={onToggle} className="mt-3 h-11 w-full rounded-2xl bg-black/[0.06] text-sm font-black text-black/70">
+          {expanded ? "접기" : `더 보기 ${Math.min(candidates.length - 3, 7)}개`}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function RecommendationCard({ candidate }: { candidate: RecommendationCandidate }) {
+  const riskTone = candidate.risk === "높음" ? "coral" : candidate.risk === "중간" ? "yellow" : "green";
+  const confidenceTone = candidate.dataConfidence === "높음" ? "green" : candidate.dataConfidence === "보통" ? "blue" : "gray";
+
+  return (
+    <Link href={candidate.href} className="block h-full">
+      <article className="h-full rounded-2xl border border-black/5 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-black/45">
+              {candidate.assetKind === "etf" ? "ETF" : "주식"} · {candidate.region} · {candidate.market}
+            </p>
+            <h3 className="mt-1 text-lg font-black text-ink">{candidate.name}</h3>
+            <p className="mt-1 text-xs font-bold text-black/45">{candidate.symbol}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <Badge tone={riskTone}>리스크 {candidate.risk}</Badge>
+            <Badge tone={confidenceTone}>신뢰도 {candidate.dataConfidence}</Badge>
+          </div>
+        </div>
+
+        <p className="mt-3 text-sm font-semibold leading-6 text-black/68">{candidate.oneLine}</p>
+
+        <div className="mt-3 rounded-2xl bg-paper p-3">
+          <p className="text-xs font-black text-black/45">왜 추천됐나요?</p>
+          <ul className="mt-2 space-y-1 text-sm font-semibold leading-5 text-black/62">
+            <li>{candidate.interestReason}</li>
+            <li>{candidate.habitReason}</li>
+            <li>{candidate.recent30DayFlow}</li>
+          </ul>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {candidate.tags.slice(0, 4).map((tag) => (
+            <span key={tag} className="rounded-full bg-skysoft px-2 py-1 text-[11px] font-black text-sky-950">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </article>
+    </Link>
   );
 }
