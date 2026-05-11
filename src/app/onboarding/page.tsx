@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { APP_NAME_KO } from "@/lib/brand";
 import { resizeImageFile } from "@/lib/image-utils";
+import { cloudSyncService } from "@/services/cloudSyncService";
 import { profileService, validateNickname } from "@/services/profileService";
 import type { LocalProfile } from "@/types/investment";
 
@@ -59,10 +60,14 @@ export default function OnboardingPage() {
     setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
   }
 
-  function nextFromProfile() {
+  async function nextFromProfile() {
     const message = validateNickname(nickname, profileService.getProfiles());
     if (message) {
       setError(message);
+      return;
+    }
+    if (await cloudSyncService.hasCloudProfile(nickname).catch(() => false)) {
+      setError("이미 사용 중인 닉네임이에요. 로그인해서 이어서 볼까요?");
       return;
     }
     setError("");
@@ -85,7 +90,7 @@ export default function OnboardingPage() {
     }
   }
 
-  function finish() {
+  async function finish() {
     const now = new Date().toISOString();
     const profile: LocalProfile = {
       localUserId: crypto.randomUUID(),
@@ -103,6 +108,7 @@ export default function OnboardingPage() {
 
     try {
       profileService.createProfile(profile);
+      await cloudSyncService.upsertProfileSnapshot(profile).catch(() => undefined);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "센스폴리오를 저장하지 못했어요.");
@@ -115,7 +121,7 @@ export default function OnboardingPage() {
       <header className="rounded-3xl bg-ink p-6 text-white shadow-soft">
         <p className="text-sm font-bold text-white/55">{APP_NAME_KO} 시작하기</p>
         <h1 className="mt-2 text-3xl font-black">닉네임으로 내 센스폴리오를 만들어요.</h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-white/72">생년월일, 이메일, 비밀번호 없이 이 기기에 기록을 저장합니다.</p>
+        <p className="mt-3 text-sm font-semibold leading-6 text-white/72">생년월일, 이메일, 비밀번호 없이 닉네임으로 내 기록을 불러옵니다. Supabase 연결 시 다른 기기에서도 이어집니다.</p>
       </header>
 
       {step === 0 ? (

@@ -3,6 +3,7 @@
 import type { LocalProfile, UserSettings } from "@/types/investment";
 import { localStore } from "@/services/localStore";
 import { GUEST_ID } from "@/lib/brand";
+import { cloudSyncService } from "@/services/cloudSyncService";
 
 const profilesKey = "sensefolio:v1:profiles";
 const currentProfileKey = "sensefolio:v1:current-profile-id";
@@ -43,12 +44,14 @@ export const profileService = {
     if (error) throw new Error(error);
     profileService.saveProfiles([{ ...profile, nickname: profile.nickname || profile.name || "" }, ...profiles]);
     profileService.setCurrentProfileId(profile.localUserId);
+    cloudSyncService.syncSoon();
   },
   updateProfile: (profile: LocalProfile) => {
     const profiles = profileService.getProfiles();
     const error = validateNickname(profile.nickname || profile.name || "", profiles, profile.localUserId);
     if (error) throw new Error(error);
     profileService.saveProfiles(profiles.map((item) => (item.localUserId === profile.localUserId ? { ...profile, name: profile.nickname } : item)));
+    cloudSyncService.syncSoon();
   },
   resetCurrentProfile: () => {
     const id = profileService.getCurrentProfileId();
@@ -63,5 +66,8 @@ export const profileService = {
       defaultBrokerOverseas: "미니스탁",
       defaultBrokerEtf: "토스증권"
     }),
-  saveSettings: (settings: UserSettings) => localStore.writeJson(settingsKey, settings)
+  saveSettings: (settings: UserSettings) => {
+    localStore.writeJson(settingsKey, settings);
+    cloudSyncService.syncSoon();
+  }
 };

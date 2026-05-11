@@ -11,6 +11,7 @@ import { APP_DISPLAY_NAME, APP_NAME_KO, APP_SUBCOPY, APP_TAGLINE, GUEST_ID } fro
 import { marketContext, marketSummary, stocks } from "@/lib/mock-data";
 import { profileGuide } from "@/lib/analysis";
 import { storage } from "@/lib/storage";
+import { cloudSyncService } from "@/services/cloudSyncService";
 import { profileService } from "@/services/profileService";
 import { recommendationService, type RecommendationCandidate, type RecommendationSectionId } from "@/services/recommendationService";
 import type { LocalProfile } from "@/types/investment";
@@ -22,6 +23,7 @@ export default function HomePage() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loginName, setLoginName] = useState("");
   const [loginState, setLoginState] = useState<LoginState>("idle");
+  const [loginLoading, setLoginLoading] = useState(false);
   const [booted, setBooted] = useState(false);
   const [expandedRecommendations, setExpandedRecommendations] = useState<Record<string, boolean>>({});
 
@@ -34,16 +36,21 @@ export default function HomePage() {
   const recommendationSections = useMemo(() => recommendationService.buildSections(localProfile), [localProfile]);
   const monthlyEtfCopy = "ETF는 개별 회사보다 넓게 담는 도구예요. 월간 흐름은 ETF 상세에서 구성 종목과 섹터를 함께 봅니다.";
 
-  function login() {
-    const found = profileService.findProfile(loginName);
+  async function login() {
+    const nickname = loginName.trim();
+    if (!nickname) return;
+    setLoginLoading(true);
+    const found = profileService.findProfile(nickname) ?? (await cloudSyncService.loginByNickname(nickname).catch(() => null));
     if (!found) {
       setLoginState("not-found");
+      setLoginLoading(false);
       return;
     }
     profileService.setCurrentProfileId(found.localUserId);
     setLocalProfile(found);
     setFavorites(storage.getFavorites());
     setLoginState("idle");
+    setLoginLoading(false);
   }
 
   function browseOnly() {
@@ -78,8 +85,8 @@ export default function HomePage() {
 
         <section className="mt-5 space-y-4 rounded-3xl bg-white p-5 shadow-soft">
           <div className="grid grid-cols-3 gap-2">
-            <button onClick={login} className="h-12 rounded-2xl bg-black/[0.08] text-sm font-black text-black/70">
-              로그인
+            <button onClick={login} disabled={loginLoading} className="h-12 rounded-2xl bg-black/[0.08] text-sm font-black text-black/70 disabled:opacity-55">
+              {loginLoading ? "불러오는 중" : "로그인"}
             </button>
             <Link href="/onboarding" className="h-12 rounded-2xl bg-ink pt-3 text-center text-sm font-black text-white">
               회원가입
@@ -104,7 +111,9 @@ export default function HomePage() {
               placeholder="회원가입 때 쓴 닉네임"
             />
           </label>
-          <p className="text-xs font-bold leading-5 text-black/45">닉네임으로 이 기기에 저장된 센스폴리오를 불러옵니다.</p>
+          <p className="text-xs font-bold leading-5 text-black/45">
+            닉네임으로 클라우드에 저장된 센스폴리오를 불러옵니다. Supabase 연결 전에는 이 브라우저의 임시 저장소를 사용합니다.
+          </p>
         </section>
 
         {loginState === "not-found" ? (
@@ -323,7 +332,20 @@ function RecommendationCard({ candidate }: { candidate: RecommendationCandidate 
   const confidenceTone = candidate.dataConfidence === "높음" ? "green" : candidate.dataConfidence === "보통" ? "blue" : "gray";
 
   return (
-    <Link href={candidate.href} className="block h-full">
+    <Link
+      href={candidate.href}
+      onClick={() =>
+        cloudSyncService.recordInterestEvent({
+          kind: "recommendation_click",
+          assetKey: candidate.symbol,
+          assetName: candidate.name,
+          assetKind: candidate.assetKind,
+          sector: candidate.sector,
+          tags: candidate.tags
+        })
+      }
+      className="block h-full"
+    >
       <article className="h-full rounded-2xl border border-black/5 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg">
         <div className="flex items-start justify-between gap-3">
           <div>

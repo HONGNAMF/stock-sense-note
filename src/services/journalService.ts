@@ -4,6 +4,7 @@ import type { ReflectionRecord, TradeRecord } from "@/types/investment";
 import { localStore } from "@/services/localStore";
 import { profileService } from "@/services/profileService";
 import { GUEST_ID } from "@/lib/brand";
+import { cloudSyncService } from "@/services/cloudSyncService";
 
 const reflectionKey = "sensefolio:v1:reflections";
 const tradeKey = "sensefolio:v1:trades";
@@ -26,6 +27,7 @@ export const journalService = {
     if (!key) return false;
     const records = journalService.getReflections();
     localStore.writeJson(key, { ...records, [record.assetKey]: record });
+    cloudSyncService.syncSoon();
     return true;
   },
   getTrades: () => {
@@ -36,6 +38,7 @@ export const journalService = {
     const key = scopedKey(tradeKey);
     if (!key) return false;
     localStore.writeJson(key, [record, ...journalService.getTrades()]);
+    cloudSyncService.syncSoon();
     return true;
   }
 };

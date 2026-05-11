@@ -10,6 +10,7 @@ import { stocks } from "@/lib/mock-data";
 import { storage } from "@/lib/storage";
 import { profileService, validateNickname } from "@/services/profileService";
 import { journalService } from "@/services/journalService";
+import { cloudSyncService, type InterestEvent } from "@/services/cloudSyncService";
 import type { LocalProfile } from "@/types/investment";
 import type { StockNote } from "@/types";
 
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
   const [notes, setNotes] = useState<StockNote[]>([]);
+  const [interestEvents, setInterestEvents] = useState<InterestEvent[]>([]);
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [message, setMessage] = useState("");
 
@@ -28,6 +30,7 @@ export default function ProfilePage() {
     setFavoriteCount(storage.getFavorites().length);
     setTradeCount(journalService.getTrades().length);
     setNotes(Object.values(storage.getNotes()).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+    setInterestEvents(cloudSyncService.getInterestEvents());
   }, []);
 
   const noteRows = useMemo(
@@ -131,7 +134,7 @@ export default function ProfilePage() {
             </div>
             <Info label="관심 분야" value={profile.interests.length ? profile.interests.join(", ") : "아직 설정하지 않았어요"} />
             <Info label="보기 방식" value={profile.viewMode === "simple" ? "한눈에 보기" : profile.viewMode === "detailed" ? "상세 보기" : "기본 보기"} />
-            <Info label="저장 방식" value="현재 버전은 이 기기에 저장됩니다. 다른 기기에서는 이어지지 않을 수 있어요." />
+            <Info label="저장 방식" value={cloudSyncService.enabled() ? "클라우드 동기화 사용 중입니다. 다른 기기에서도 같은 닉네임으로 이어볼 수 있어요." : "Supabase 연결 전에는 임시로 이 브라우저에 저장됩니다. 배포 설정에 Supabase 키를 넣으면 다른 기기와 동기화됩니다."} />
           </div>
         ) : (
           <div className="space-y-4">
@@ -158,6 +161,26 @@ export default function ProfilePage() {
               현재 센스폴리오 초기화
             </button>
           ) : null}
+        </div>
+      </section>
+
+      <section className="mt-7">
+        <h2 className="text-xl font-black">관심 변화</h2>
+        <div className="mt-3 rounded-3xl bg-white p-5 shadow-sm">
+          {interestEvents.length ? (
+            <div className="space-y-3">
+              {interestEvents.slice(0, 5).map((event) => (
+                <div key={event.id} className="rounded-2xl bg-paper p-3">
+                  <p className="text-sm font-black">{event.assetName}</p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-black/55">
+                    {event.sector} · {event.tags.slice(0, 4).join(", ")} · {new Date(event.createdAt).toLocaleDateString("ko-KR")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm font-semibold leading-6 text-black/55">추천 카드나 종목 상세를 볼수록 어떤 분야에 관심이 생겼는지 여기에 쌓입니다.</p>
+          )}
         </div>
       </section>
 

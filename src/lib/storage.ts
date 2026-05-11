@@ -3,6 +3,7 @@
 import type { StockNote, UserProfile, WatchTag } from "@/types";
 import { GUEST_ID } from "@/lib/brand";
 import { profileService } from "@/services/profileService";
+import { cloudSyncService } from "@/services/cloudSyncService";
 
 const keys = {
   legacyProfile: "sensefolio:v1:legacy-profile",
@@ -54,6 +55,7 @@ export const storage = {
     const favorites = storage.getFavorites();
     const next = favorites.includes(ticker) ? favorites.filter((item) => item !== ticker) : [...favorites, ticker];
     writeJson(key, next);
+    cloudSyncService.syncSoon();
     return next;
   },
   getNotes: () => {
@@ -66,6 +68,7 @@ export const storage = {
     if (!key) return false;
     const notes = storage.getNotes();
     writeJson(key, { ...notes, [note.ticker]: note });
+    cloudSyncService.syncSoon();
     return true;
   },
   getTags: () => {
@@ -77,6 +80,7 @@ export const storage = {
     if (!key) return false;
     const tags = storage.getTags();
     writeJson(key, { ...tags, [ticker]: tag });
+    cloudSyncService.syncSoon();
     return true;
   }
 };
