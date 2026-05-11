@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { Section } from "@/components/Section";
 import { StockCard } from "@/components/StockCard";
-import { APP_DISPLAY_NAME, APP_SUBCOPY, APP_TAGLINE, GUEST_ID } from "@/lib/brand";
+import { APP_DISPLAY_NAME, APP_NAME_KO, APP_SUBCOPY, APP_TAGLINE, GUEST_ID } from "@/lib/brand";
 import { marketContext, marketSummary, stocks } from "@/lib/mock-data";
 import { profileGuide } from "@/lib/analysis";
 import { storage } from "@/lib/storage";
@@ -136,6 +136,7 @@ export default function HomePage() {
   }
 
   const isGuest = localProfile.localUserId === GUEST_ID || localProfile.isGuest;
+  const avatarInitial = (localProfile.nickname || localProfile.name || APP_NAME_KO).slice(0, 1);
 
   return (
     <AppShell>
@@ -146,7 +147,7 @@ export default function HomePage() {
           <p className="mt-2 text-sm font-semibold leading-6 text-black/55">{APP_SUBCOPY}</p>
         </div>
         <div className="grid size-12 place-items-center overflow-hidden rounded-full bg-ink text-lg font-black text-white">
-          {localProfile.profileImageUrl ? <img src={localProfile.profileImageUrl} alt="" className="size-12 object-cover" /> : (localProfile.nickname || localProfile.name).slice(0, 1)}
+          {localProfile.profileImageUrl ? <img src={localProfile.profileImageUrl} alt="" className="size-12 object-cover" /> : avatarInitial}
         </div>
       </header>
 
