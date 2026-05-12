@@ -133,8 +133,10 @@ export default function ProfilePage() {
               <Badge tone="green">매수/매도 기록 {tradeCount}개</Badge>
             </div>
             <Info label="관심 분야" value={profile.interests.length ? profile.interests.join(", ") : "아직 설정하지 않았어요"} />
+            <Info label="투자습관" value={profile.investmentProfile?.resultSummary ?? "아직 분석하지 않았어요"} />
             <Info label="보기 방식" value={profile.viewMode === "simple" ? "한눈에 보기" : profile.viewMode === "detailed" ? "상세 보기" : "기본 보기"} />
             <Info label="저장 방식" value={cloudSyncService.enabled() ? "클라우드 동기화 사용 중입니다. 다른 기기에서도 같은 닉네임으로 이어볼 수 있어요." : "Supabase 연결 전에는 임시로 이 브라우저에 저장됩니다. 배포 설정에 Supabase 키를 넣으면 다른 기기와 동기화됩니다."} />
+            <Info label="저장 상태" value={cloudSyncService.enabled() ? "클라우드 저장 연결됨" : "임시 저장소 사용 중"} />
           </div>
         ) : (
           <div className="space-y-4">
@@ -156,6 +158,16 @@ export default function ProfilePage() {
           <Link href="/onboarding" className="block h-12 rounded-2xl bg-black/[0.06] pt-3 text-center text-sm font-black text-black/65">
             새 센스폴리오 만들기
           </Link>
+          {profile ? (
+            <>
+              <Link href="/onboarding?mode=habit" className="block h-12 rounded-2xl bg-black/[0.06] pt-3 text-center text-sm font-black text-black/65">
+                투자습관 다시 분석하기
+              </Link>
+              <Link href="/onboarding?mode=precision" className="block h-12 rounded-2xl bg-black/[0.06] pt-3 text-center text-sm font-black text-black/65">
+                정밀 투자습관 분석하기
+              </Link>
+            </>
+          ) : null}
           {profile ? (
             <button type="button" onClick={resetCurrentNote} className="h-12 rounded-2xl bg-red-50 text-sm font-black text-red-600">
               현재 센스폴리오 초기화

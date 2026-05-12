@@ -8,8 +8,10 @@ import { Badge } from "@/components/Badge";
 import { APP_NAME_KO } from "@/lib/brand";
 import { resizeImageFile } from "@/lib/image-utils";
 import { storage } from "@/lib/storage";
+import { authService } from "@/services/authService";
 import { cloudSyncService } from "@/services/cloudSyncService";
 import { profileService, validateNickname } from "@/services/profileService";
+import { investmentProfileService } from "@/services/investmentProfileService";
 import { recommendationService, type RecommendationCandidate, type RecommendationSection } from "@/services/recommendationService";
 import type { InvestmentPreferences, InvestmentProfile, LocalProfile } from "@/types/investment";
 
@@ -86,7 +88,19 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setNickname(new URLSearchParams(window.location.search).get("nickname") ?? "");
+    const params = new URLSearchParams(window.location.search);
+    const current = profileService.getProfile();
+    if (current) {
+      setNickname(current.nickname);
+      setProfileImageUrl(current.profileImageUrl ?? "");
+      setInterests(current.interests ?? []);
+      setWatchSymbols(current.watchSymbols ?? []);
+      if (current.investmentProfile) setInvestmentProfile(current.investmentProfile);
+      if (current.preferences) setPreferences(current.preferences);
+      if (params.get("mode") === "habit" || params.get("mode") === "precision") setStep(3);
+      return;
+    }
+    setNickname(params.get("nickname") ?? "");
   }, []);
 
   const draftProfile = useMemo<LocalProfile>(
@@ -120,8 +134,9 @@ export default function OnboardingPage() {
       setError(message);
       return;
     }
-    if (await cloudSyncService.hasCloudProfile(nickname).catch(() => false)) {
-      setError("이미 사용 중인 닉네임이에요. 로그인해서 이어서 볼까요?");
+    const duplicateMessage = await authService.checkNicknameDuplicate(nickname).catch(() => "");
+    if (duplicateMessage) {
+      setError(duplicateMessage);
       return;
     }
     setError("");
@@ -157,7 +172,22 @@ export default function OnboardingPage() {
 
   async function ensureProfile(profileOverride = investmentProfile, preferenceOverride = preferences) {
     const current = profileService.getProfile();
-    if (current) return current;
+    if (current) {
+      const next: LocalProfile = {
+        ...current,
+        interests,
+        watchSymbols,
+        profileImageUrl: profileImageUrl || current.profileImageUrl,
+        investorSummary: profileOverride.resultSummary,
+        investmentProfile: profileOverride,
+        preferences: preferenceOverride,
+        onboardingCompleted: true,
+        updatedAt: new Date().toISOString()
+      };
+      profileService.updateProfile(next);
+      await investmentProfileService.saveInvestmentProfile(next.localUserId, profileOverride).catch(() => false);
+      return next;
+    }
     const now = new Date().toISOString();
     const profile: LocalProfile = {
       localUserId: crypto.randomUUID(),
@@ -174,8 +204,7 @@ export default function OnboardingPage() {
       createdAt: now,
       updatedAt: now
     };
-    profileService.createProfile(profile);
-    await cloudSyncService.upsertProfileSnapshot(profile).catch(() => undefined);
+    await authService.signupWithNickname(profile);
     return profile;
   }
 

@@ -11,6 +11,7 @@ import { APP_DISPLAY_NAME, APP_NAME_KO, APP_SUBCOPY, APP_TAGLINE, GUEST_ID } fro
 import { marketContext, marketSummary, stocks } from "@/lib/mock-data";
 import { profileGuide } from "@/lib/analysis";
 import { storage } from "@/lib/storage";
+import { authService } from "@/services/authService";
 import { cloudSyncService } from "@/services/cloudSyncService";
 import { profileService } from "@/services/profileService";
 import { recommendationService, type RecommendationCandidate, type RecommendationSectionId } from "@/services/recommendationService";
@@ -40,7 +41,7 @@ export default function HomePage() {
     const nickname = loginName.trim();
     if (!nickname) return;
     setLoginLoading(true);
-    const found = profileService.findProfile(nickname) ?? (await cloudSyncService.loginByNickname(nickname).catch(() => null));
+    const found = await authService.nicknameLogin(nickname).catch(() => null);
     if (!found) {
       setLoginState("not-found");
       setLoginLoading(false);
@@ -112,7 +113,12 @@ export default function HomePage() {
             />
           </label>
           <p className="text-xs font-bold leading-5 text-black/45">
-            닉네임으로 클라우드에 저장된 센스폴리오를 불러옵니다. Supabase 연결 전에는 이 브라우저의 임시 저장소를 사용합니다.
+            {cloudSyncService.enabled()
+              ? "닉네임으로 저장된 센스폴리오를 불러옵니다. 다른 기기에서도 같은 닉네임으로 이어서 볼 수 있어요."
+              : "현재는 이 브라우저의 임시 저장소를 사용합니다. 클라우드 연결 후 다른 기기에서도 이어서 볼 수 있어요."}
+          </p>
+          <p className="rounded-2xl bg-paper p-3 text-xs font-black text-black/55">
+            저장 상태: {cloudSyncService.enabled() ? "클라우드 저장 연결됨" : "임시 저장소 사용 중"}
           </p>
         </section>
 
@@ -161,6 +167,22 @@ export default function HomePage() {
           <Link href="/onboarding" className="mt-4 block h-11 rounded-2xl bg-ink pt-3 text-center text-xs font-black text-white">
             회원가입하기
           </Link>
+        </section>
+      ) : null}
+
+      {!isGuest && !localProfile.investmentProfile ? (
+        <section className="mt-5 rounded-3xl bg-lemon/80 p-5 shadow-soft">
+          <Badge tone="lemon">투자습관 분석 필요</Badge>
+          <h2 className="mt-3 text-lg font-black text-yellow-950">아직 투자습관 분석을 하지 않았어요.</h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-yellow-950/75">몇 가지 질문에 답하면 더 잘 맞는 설명을 볼 수 있어요.</p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link href="/onboarding?mode=habit" className="h-11 rounded-2xl bg-ink pt-3 text-center text-xs font-black text-white">
+              투자습관 분석하기
+            </Link>
+            <button className="h-11 rounded-2xl bg-white text-xs font-black text-black/65">
+              나중에 할게요
+            </button>
+          </div>
         </section>
       ) : null}
 

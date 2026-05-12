@@ -4,6 +4,7 @@ import type { LocalProfile, RecommendedItemRecord, ReflectionRecord, TradeRecord
 import type { StockNote, WatchTag } from "@/types";
 import { GUEST_ID } from "@/lib/brand";
 import { localStore } from "@/services/localStore";
+import { syncService } from "@/services/syncService";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -175,6 +176,8 @@ export const cloudSyncService = {
     if (!enabled()) return;
     window.setTimeout(() => {
       cloudSyncService.upsertCurrentSnapshot().catch(() => undefined);
+      const id = currentUserId();
+      if (id) syncService.syncLocalToCloud(id).catch(() => undefined);
     }, 0);
   },
   getInterestEvents: () => {
