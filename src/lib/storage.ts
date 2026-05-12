@@ -4,6 +4,7 @@ import type { StockNote, UserProfile, WatchTag } from "@/types";
 import { GUEST_ID } from "@/lib/brand";
 import { profileService } from "@/services/profileService";
 import { cloudSyncService } from "@/services/cloudSyncService";
+import { localStore } from "@/services/localStore";
 
 const keys = {
   legacyProfile: "sensefolio:v1:legacy-profile",
@@ -13,18 +14,11 @@ const keys = {
 };
 
 function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const value = window.localStorage.getItem(key);
-    return value ? (JSON.parse(value) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  return localStore.readJson<T>(key, fallback);
 }
 
 function writeJson<T>(key: string, value: T) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
+  localStore.writeJson(key, value);
 }
 
 function currentUserId() {
@@ -47,7 +41,10 @@ export const storage = {
   },
   setFavorites: (tickers: string[]) => {
     const key = scopedKey(keys.favorites);
-    if (key) writeJson(key, tickers);
+    if (key) {
+      writeJson(key, tickers);
+      cloudSyncService.syncSoon();
+    }
   },
   toggleFavorite: (ticker: string) => {
     const key = scopedKey(keys.favorites);

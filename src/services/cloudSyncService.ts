@@ -1,6 +1,6 @@
 "use client";
 
-import type { LocalProfile, ReflectionRecord, TradeRecord, UserSettings } from "@/types/investment";
+import type { LocalProfile, RecommendedItemRecord, ReflectionRecord, TradeRecord, UserSettings } from "@/types/investment";
 import type { StockNote, WatchTag } from "@/types";
 import { GUEST_ID } from "@/lib/brand";
 import { localStore } from "@/services/localStore";
@@ -18,7 +18,8 @@ const keys = {
   tags: "sensefolio:v1:tags",
   reflections: "sensefolio:v1:reflections",
   trades: "sensefolio:v1:trades",
-  interestEvents: "sensefolio:v1:interest-events"
+  interestEvents: "sensefolio:v1:interest-events",
+  recommendedItems: "sensefolio:v1:recommended-items"
 };
 
 type CloudPayload = {
@@ -30,6 +31,7 @@ type CloudPayload = {
   reflections: Record<string, ReflectionRecord>;
   trades: TradeRecord[];
   interestEvents: InterestEvent[];
+  recommendedItems: RecommendedItemRecord[];
   updatedAt: string;
 };
 
@@ -114,6 +116,7 @@ function buildPayload(profile: LocalProfile): CloudPayload {
     reflections: localStore.readJson<Record<string, ReflectionRecord>>(scopedKey(keys.reflections, profile.localUserId), {}),
     trades: localStore.readJson<TradeRecord[]>(scopedKey(keys.trades, profile.localUserId), []),
     interestEvents: localStore.readJson<InterestEvent[]>(scopedKey(keys.interestEvents, profile.localUserId), []),
+    recommendedItems: localStore.readJson<RecommendedItemRecord[]>(scopedKey(keys.recommendedItems, profile.localUserId), []),
     updatedAt: new Date().toISOString()
   };
 }
@@ -131,6 +134,7 @@ function hydrate(row: CloudRow) {
   localStore.writeJson(scopedKey(keys.reflections, profile.localUserId), row.payload.reflections ?? {});
   localStore.writeJson(scopedKey(keys.trades, profile.localUserId), row.payload.trades ?? []);
   localStore.writeJson(scopedKey(keys.interestEvents, profile.localUserId), row.payload.interestEvents ?? []);
+  localStore.writeJson(scopedKey(keys.recommendedItems, profile.localUserId), row.payload.recommendedItems ?? []);
   return profile;
 }
 
@@ -191,6 +195,20 @@ export const cloudSyncService = {
       ...rows
     ].slice(0, 300);
     localStore.writeJson(scopedKey(keys.interestEvents, id), next);
+    cloudSyncService.syncSoon();
+    return true;
+  },
+  getRecommendedItems: () => {
+    const id = currentUserId();
+    if (!id || id === GUEST_ID) return [];
+    return localStore.readJson<RecommendedItemRecord[]>(scopedKey(keys.recommendedItems, id), []);
+  },
+  saveRecommendedItem: (record: Omit<RecommendedItemRecord, "id" | "createdAt">) => {
+    const id = currentUserId();
+    if (!id || id === GUEST_ID) return false;
+    const rows = cloudSyncService.getRecommendedItems();
+    const next: RecommendedItemRecord = { ...record, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    localStore.writeJson(scopedKey(keys.recommendedItems, id), [next, ...rows].slice(0, 300));
     cloudSyncService.syncSoon();
     return true;
   }

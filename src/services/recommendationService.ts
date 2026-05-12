@@ -3,7 +3,7 @@ import { listedCompanies } from "@/lib/listed-companies";
 import { stocks } from "@/lib/mock-data";
 import { companyProfileService } from "@/services/companyProfileService";
 import type { CompanyProfile, ListedCompany, StockStatus } from "@/types";
-import type { LocalProfile, RiskLevel } from "@/types/investment";
+import type { InvestmentPreferences, LocalProfile, RiskLevel } from "@/types/investment";
 
 export type RecommendationSectionId = "taste" | "study" | "etf" | "overlooked" | "themeRisk";
 
@@ -84,6 +84,25 @@ function scoreConfidence(confidence: CompanyProfile["dataConfidence"]) {
   return 1;
 }
 
+function scorePreferences(candidate: { assetKind: "stock" | "etf"; region: "국내" | "해외"; risk: RiskLevel; isOverlooked: boolean; tags: string[] }, preferences?: InvestmentPreferences) {
+  if (!preferences) return 0;
+  let score = 0;
+  if (preferences.preferredMarket === "전부 보기") score += 4;
+  if (preferences.preferredMarket === "ETF" && candidate.assetKind === "etf") score += 20;
+  if (preferences.preferredMarket === "국내주식" && candidate.assetKind === "stock" && candidate.region === "국내") score += 14;
+  if (preferences.preferredMarket === "해외주식" && candidate.assetKind === "stock" && candidate.region === "해외") score += 14;
+  if (preferences.preferredRisk === "낮은 리스크" && candidate.risk === "낮음") score += 18;
+  if (preferences.preferredRisk === "중간 리스크" && candidate.risk !== "높음") score += 10;
+  if (preferences.preferredRisk.includes("높은 리스크") && candidate.risk === "높음") score += 8;
+  if (preferences.preferredSize === "소외주도 보고 싶음" && candidate.isOverlooked) score += 14;
+  if (preferences.preferredApproach === "ETF로 분산해서 보기" && candidate.assetKind === "etf") score += 18;
+  if (preferences.preferredApproach === "저평가/소외주 찾기" && candidate.isOverlooked) score += 18;
+  if (preferences.preferredApproach === "내가 좋아하는 분야 위주로 보기") score += 6;
+  if (preferences.preferredApproach === "성장 가능성 보기" && candidate.tags.some((tag) => ["AI", "반도체", "로봇", "바이오", "성장"].includes(tag))) score += 12;
+  if (preferences.preferredApproach === "안정적으로 오래 보기" && candidate.risk !== "높음") score += 12;
+  return score;
+}
+
 function buildListedCandidate(company: ListedCompany, profile: LocalProfile | null): RecommendationCandidate {
   const ticker = composeTicker(company);
   const stock = stocks.find((item) => item.stockCode === company.stockCode || item.ticker === ticker);
@@ -96,6 +115,13 @@ function buildListedCandidate(company: ListedCompany, profile: LocalProfile | nu
   const isOverlooked = tags.some((tag) => ["영상보안", "의료기기", "자동차부품", "조선"].includes(tag)) && !isOverheated;
   const dataConfidence = companyProfile.dataConfidence;
   const risk = isOverheated ? "높음" : stockStatusRisk(stock?.status);
+  const partialCandidate = {
+    assetKind: isEtf ? ("etf" as const) : ("stock" as const),
+    region: company.market === "US" ? ("해외" as const) : ("국내" as const),
+    risk,
+    isOverlooked,
+    tags
+  };
 
   const interestScore = matchedInterests.length * 18;
   const businessScore = companyProfile.businessSummary.includes("정리 중") ? 3 : 16;
@@ -106,7 +132,13 @@ function buildListedCandidate(company: ListedCompany, profile: LocalProfile | nu
   const flowScore = isEtf ? 8 : isThemeLike ? 12 : stock ? 14 : 6;
   const financialScore = scoreConfidence(dataConfidence) + (risk === "낮음" ? 8 : risk === "중간" ? 4 : 0);
   const riskPenalty = isOverheated ? 16 : dataConfidence === "낮음" ? 6 : 0;
-  const score = interestScore + businessScore + habitScore + flowScore + financialScore - riskPenalty;
+  const preferenceScore = scorePreferences(partialCandidate, profile?.preferences);
+  const investmentProfileScore =
+    (profile?.investmentProfile?.buyStyle === "신중형" && risk !== "높음" ? 8 : 0) +
+    (profile?.investmentProfile?.interestStyle === "ETF 기반" && isEtf ? 14 : 0) +
+    (profile?.investmentProfile?.interestStyle === "테마/뉴스 기반" && isThemeLike ? 8 : 0) +
+    (profile?.investmentProfile?.reviewStyle === "기록 높음" && companyProfile.dataConfidence !== "낮음" ? 5 : 0);
+  const score = interestScore + businessScore + habitScore + preferenceScore + investmentProfileScore + flowScore + financialScore - riskPenalty;
 
   const params = new URLSearchParams({
     fallback: "1",
@@ -128,7 +160,9 @@ function buildListedCandidate(company: ListedCompany, profile: LocalProfile | nu
     interestReason: matchedInterests.length
       ? `선택한 관심사 ${matchedInterests.slice(0, 2).join(", ")}와 ${tags.slice(0, 3).join(", ")} 태그가 이어집니다.`
       : "관심사가 아직 적어 최근 30일 흐름과 업종 태그를 넓게 보고 골랐습니다.",
-    habitReason: isEtf
+    habitReason: profile?.preferences
+      ? `${profile.preferences.preferredMarket}, ${profile.preferences.preferredRisk}, ${profile.preferences.preferredApproach} 조건을 함께 반영했습니다.`
+      : isEtf
       ? "개별 회사보다 넓게 분산해서 공부하기 좋은 후보입니다."
       : companyProfile.businessSummary.includes("정리 중")
         ? "기본 업종 정보부터 확인한 뒤 사업 내용을 보완해볼 후보입니다."
@@ -150,6 +184,8 @@ function buildMockStockCandidates(profile: LocalProfile | null): RecommendationC
     .map((stock) => {
       const tags = Array.from(new Set([stock.sector ?? "", ...stock.interests, ...(stock.companyProfile?.industryTags ?? [])].filter(Boolean)));
       const matchedInterests = getMatchedInterest(tags, profile?.interests ?? []);
+      const risk = stockStatusRisk(stock.status);
+      const isOverlooked = false;
       return {
         id: `mock-${stock.ticker}`,
         name: stock.name,
@@ -162,10 +198,10 @@ function buildMockStockCandidates(profile: LocalProfile | null): RecommendationC
         interestReason: matchedInterests.length ? `선택한 관심사 ${matchedInterests.join(", ")}와 연결됩니다.` : "해외 주요 주식 mock 후보로 포함했습니다.",
         habitReason: "해외 주요 주식은 MVP에서는 mock data로 보여주고, 실제 API 연결 시 확장됩니다.",
         recent30DayFlow: stock.whyNow,
-        risk: stockStatusRisk(stock.status),
+        risk,
         dataConfidence: stock.companyProfile?.dataConfidence ?? "낮음",
         tags,
-        score: 30 + matchedInterests.length * 16,
+        score: 30 + matchedInterests.length * 16 + scorePreferences({ assetKind: "stock", region: "해외", risk, isOverlooked, tags }, profile?.preferences),
         href: `/stocks/${encodeURIComponent(stock.ticker)}`,
         isOverheated: stock.status === "과열",
         isOverlooked: false
@@ -177,6 +213,7 @@ function buildEtfCandidates(profile: LocalProfile | null): RecommendationCandida
   return etfs.map((etf) => {
     const tags = [etf.character, etf.market === "KR" ? "국내 ETF" : "해외 ETF", etf.oneLine, etf.name];
     const matchedInterests = getMatchedInterest(tags, profile?.interests ?? []);
+    const isOverlooked = etf.character === "방어형" || etf.character === "배당형";
     return {
       id: `etf-${etf.symbol}`,
       name: etf.name,
@@ -192,10 +229,10 @@ function buildEtfCandidates(profile: LocalProfile | null): RecommendationCandida
       risk: etf.risk,
       dataConfidence: "보통",
       tags,
-      score: 28 + matchedInterests.length * 14 + (etf.risk === "낮음" ? 12 : 4),
+      score: 28 + matchedInterests.length * 14 + (etf.risk === "낮음" ? 12 : 4) + scorePreferences({ assetKind: "etf", region: etf.market === "KR" ? "국내" : "해외", risk: etf.risk, isOverlooked, tags }, profile?.preferences),
       href: `/etfs/${encodeURIComponent(etf.symbol)}`,
       isOverheated: etf.risk === "높음",
-      isOverlooked: etf.character === "방어형" || etf.character === "배당형"
+      isOverlooked
     };
   });
 }
