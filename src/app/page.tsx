@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
+import { EconomyTermSearch } from "@/components/EconomyTermSearch";
 import { Section } from "@/components/Section";
 import { StockCard } from "@/components/StockCard";
 import { APP_DISPLAY_NAME, APP_NAME_KO, APP_SUBCOPY, APP_TAGLINE, GUEST_ID } from "@/lib/brand";
@@ -203,6 +204,8 @@ export default function HomePage() {
         <span className="font-bold">종목명, 종목코드, 업종, 제품 키워드 검색</span>
       </Link>
 
+      <EconomyTermSearch compact />
+
       <section className="mt-5 rounded-3xl bg-ink p-5 text-white shadow-soft">
         <div className="flex flex-wrap gap-2">
           <Badge tone="lemon">참고용 해석</Badge>
@@ -279,8 +282,8 @@ export default function HomePage() {
 
       <Section title="단어찾기 바로가기">
         <Link href="/glossary" className="block rounded-3xl bg-white p-5 shadow-soft">
-          <p className="text-lg font-black">PER, PBR, EPS, ROE 쉽게 보기</p>
-          <p className="mt-2 text-sm font-semibold leading-6 text-black/55">모르는 용어를 한 줄 설명, 쉽게 말하면, 주의할 점으로 확인합니다.</p>
+          <p className="text-lg font-black">기준금리, CPI, 코스피, PER 쉽게 보기</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-black/55">모르는 경제·투자 용어를 쉬운 설명, 시장 영향, 포트폴리오 힌트로 확인합니다.</p>
         </Link>
       </Section>
 
