@@ -4,7 +4,7 @@ type EtfProfile = Pick<Etf, "holdings" | "sectors" | "countries" | "easyExplanat
 
 const defaultProfile: EtfProfile = {
   easyExplanation:
-    "ETF는 여러 종목을 한 바구니에 담아 한 번에 분산해서 보는 상품입니다. MVP 구성 비중은 예시 데이터이며, 실제 서비스에서는 운용사·거래소 API로 교체하는 구조입니다.",
+    "ETF는 여러 종목을 한 바구니에 담아 한 번에 분산해서 보는 상품입니다. 구성과 시세 흐름은 제공처 기준으로 달라질 수 있어 실제 거래 전 운용사와 증권사 화면을 함께 확인하는 편이 좋습니다.",
   holdings: [
     { name: "구성 정보 확인 필요", symbol: "TBD", weight: 100 }
   ],
@@ -434,17 +434,273 @@ const etfProfiles: Record<string, EtfProfile> = {
   }
 };
 
+const profileTemplates: Record<string, EtfProfile> = {
+  usBroad: etfProfiles["360750.KS"],
+  usTech: etfProfiles["133690.KS"],
+  koreaSemi: etfProfiles["091160.KS"],
+  globalSemi: etfProfiles.SMH,
+  dividend: etfProfiles["458730.KS"],
+  robot: etfProfiles["465350.KS"],
+  gold: etfProfiles.GLD,
+  bond: {
+    easyExplanation: "채권 ETF는 주식보다 변동성이 낮을 수 있지만, 금리 변화에 따라 가격이 움직입니다. 금리가 내려가면 채권 가격이 좋아질 수 있고, 금리가 오르면 부담이 될 수 있습니다.",
+    holdings: [
+      { name: "미국 국채 10년물", symbol: "UST10Y", weight: 31.5 },
+      { name: "미국 국채 7년물", symbol: "UST7Y", weight: 18.3 },
+      { name: "미국 국채 20년물", symbol: "UST20Y", weight: 16.7 },
+      { name: "미국 국채 30년물", symbol: "UST30Y", weight: 12.2 },
+      { name: "미국 국채 5년물", symbol: "UST5Y", weight: 9.8 },
+      { name: "현금성 자산", symbol: "CASH", weight: 4.5 },
+      { name: "미국 단기국채", symbol: "USTB", weight: 3.9 },
+      { name: "국채 선물", symbol: "FUT", weight: 1.6 },
+      { name: "환헤지 포지션", symbol: "FXH", weight: 0.9 },
+      { name: "기타", symbol: "ETC", weight: 0.6 }
+    ],
+    sectors: [
+      { name: "국채", weight: 88 },
+      { name: "현금성", weight: 7 },
+      { name: "파생/헤지", weight: 5 }
+    ],
+    countries: [
+      { name: "미국", weight: 92 },
+      { name: "기타", weight: 8 }
+    ],
+    comparison: "주식 ETF와 달리 기업 성장보다 금리 방향과 만기가 중요합니다.",
+    risks: ["금리가 오르면 채권 가격이 하락할 수 있습니다.", "장기채일수록 금리 변동에 더 민감합니다.", "환노출 상품은 환율 영향도 함께 봐야 합니다."]
+  },
+  battery: {
+    easyExplanation: "2차전지 ETF는 배터리 소재, 셀, 장비, 전기차 밸류체인 기업을 묶어 보는 테마 ETF입니다.",
+    holdings: [
+      { name: "LG에너지솔루션", symbol: "373220.KS", weight: 17.4 },
+      { name: "삼성SDI", symbol: "006400.KS", weight: 13.2 },
+      { name: "POSCO홀딩스", symbol: "005490.KS", weight: 9.7 },
+      { name: "에코프로비엠", symbol: "247540.KS", weight: 8.6 },
+      { name: "엘앤에프", symbol: "066970.KS", weight: 6.2 },
+      { name: "포스코퓨처엠", symbol: "003670.KS", weight: 5.9 },
+      { name: "SK이노베이션", symbol: "096770.KS", weight: 5.5 },
+      { name: "나노신소재", symbol: "121600.KS", weight: 3.8 },
+      { name: "천보", symbol: "278280.KS", weight: 3.1 },
+      { name: "피엔티", symbol: "137400.KS", weight: 2.9 }
+    ],
+    sectors: [
+      { name: "배터리 셀", weight: 35 },
+      { name: "양극재/소재", weight: 32 },
+      { name: "장비", weight: 13 },
+      { name: "전기차/부품", weight: 10 },
+      { name: "기타", weight: 10 }
+    ],
+    countries: [{ name: "한국", weight: 100 }],
+    comparison: "개별 배터리주보다 넓지만 전기차 수요와 원자재 가격에 같이 흔들립니다.",
+    risks: ["전기차 수요 둔화에 민감합니다.", "리튬·니켈 가격과 재고 사이클을 봐야 합니다.", "테마 과열 후 조정이 클 수 있습니다."]
+  },
+  power: {
+    easyExplanation: "전력 인프라 ETF는 AI 데이터센터, 전력망 투자, 변압기·전선 수요와 연결되는 기업을 묶어 봅니다.",
+    holdings: [
+      { name: "HD현대일렉트릭", symbol: "267260.KS", weight: 14.8 },
+      { name: "LS ELECTRIC", symbol: "010120.KS", weight: 13.1 },
+      { name: "효성중공업", symbol: "298040.KS", weight: 10.6 },
+      { name: "LS", symbol: "006260.KS", weight: 8.8 },
+      { name: "일진전기", symbol: "103590.KS", weight: 7.4 },
+      { name: "대한전선", symbol: "001440.KS", weight: 6.2 },
+      { name: "가온전선", symbol: "000500.KS", weight: 5.1 },
+      { name: "제룡전기", symbol: "033100.KS", weight: 4.6 },
+      { name: "서전기전", symbol: "189860.KS", weight: 3.5 },
+      { name: "비츠로테크", symbol: "042370.KS", weight: 3.0 }
+    ],
+    sectors: [
+      { name: "변압기/전력기기", weight: 42 },
+      { name: "전선", weight: 24 },
+      { name: "전력망 장비", weight: 18 },
+      { name: "자동화/제어", weight: 9 },
+      { name: "기타", weight: 7 }
+    ],
+    countries: [{ name: "한국", weight: 100 }],
+    comparison: "AI 반도체 ETF와 달리 데이터센터 전력 수요를 뒤에서 받치는 인프라 기업을 보는 성격입니다.",
+    risks: ["수주 기대가 이미 반영되면 변동성이 커질 수 있습니다.", "원자재 가격과 환율 영향을 받습니다.", "전력 투자 사이클 둔화에 주의해야 합니다."]
+  },
+  healthcare: {
+    easyExplanation: "헬스케어 ETF는 제약, 바이오, 의료기기, 진단 기업을 묶어 보는 상품입니다.",
+    holdings: [
+      { name: "셀트리온", symbol: "068270.KS", weight: 16.8 },
+      { name: "삼성바이오로직스", symbol: "207940.KS", weight: 15.6 },
+      { name: "유한양행", symbol: "000100.KS", weight: 7.8 },
+      { name: "SK바이오팜", symbol: "326030.KS", weight: 5.9 },
+      { name: "한미약품", symbol: "128940.KS", weight: 5.5 },
+      { name: "HLB", symbol: "028300.KS", weight: 5.1 },
+      { name: "알테오젠", symbol: "196170.KS", weight: 4.8 },
+      { name: "인바디", symbol: "041830.KQ", weight: 3.2 },
+      { name: "클래시스", symbol: "214150.KQ", weight: 3.0 },
+      { name: "오스템임플란트", symbol: "048260.KQ", weight: 2.6 }
+    ],
+    sectors: [
+      { name: "바이오시밀러/CDMO", weight: 33 },
+      { name: "제약", weight: 24 },
+      { name: "바이오 신약", weight: 20 },
+      { name: "의료기기", weight: 13 },
+      { name: "진단/기타", weight: 10 }
+    ],
+    countries: [{ name: "한국", weight: 100 }],
+    comparison: "개별 바이오주보다 분산되지만 임상·허가 뉴스에 따른 변동성은 남아 있습니다.",
+    risks: ["임상 결과와 규제 이슈에 민감합니다.", "적자 성장 기업 비중을 확인해야 합니다.", "개별 기업 뉴스가 ETF에도 영향을 줄 수 있습니다."]
+  },
+  bank: {
+    easyExplanation: "은행 ETF는 국내 금융지주와 은행주를 묶어 금리, 배당, 주주환원 흐름을 보는 상품입니다.",
+    holdings: [
+      { name: "KB금융", symbol: "105560.KS", weight: 21.3 },
+      { name: "신한지주", symbol: "055550.KS", weight: 18.6 },
+      { name: "하나금융지주", symbol: "086790.KS", weight: 15.7 },
+      { name: "우리금융지주", symbol: "316140.KS", weight: 12.4 },
+      { name: "기업은행", symbol: "024110.KS", weight: 8.3 },
+      { name: "BNK금융지주", symbol: "138930.KS", weight: 6.1 },
+      { name: "DGB금융지주", symbol: "139130.KS", weight: 4.8 },
+      { name: "JB금융지주", symbol: "175330.KS", weight: 4.1 },
+      { name: "카카오뱅크", symbol: "323410.KS", weight: 3.7 },
+      { name: "제주은행", symbol: "006220.KS", weight: 1.5 }
+    ],
+    sectors: [
+      { name: "금융지주", weight: 68 },
+      { name: "은행", weight: 22 },
+      { name: "인터넷은행", weight: 6 },
+      { name: "기타", weight: 4 }
+    ],
+    countries: [{ name: "한국", weight: 100 }],
+    comparison: "개별 은행주보다 분산되지만 금리, 대손비용, 주주환원 정책에 함께 영향을 받습니다.",
+    risks: ["부동산 PF와 대손비용을 확인해야 합니다.", "금리 하락기에는 순이자마진이 부담될 수 있습니다.", "규제와 배당 정책 변화에 민감합니다."]
+  },
+  auto: {
+    easyExplanation: "자동차 ETF는 완성차, 부품, 전장, 전기차 전환과 연결된 기업을 묶어 보는 상품입니다.",
+    holdings: [
+      { name: "현대차", symbol: "005380.KS", weight: 22.1 },
+      { name: "기아", symbol: "000270.KS", weight: 19.4 },
+      { name: "현대모비스", symbol: "012330.KS", weight: 10.2 },
+      { name: "HL만도", symbol: "204320.KS", weight: 6.8 },
+      { name: "한온시스템", symbol: "018880.KS", weight: 5.9 },
+      { name: "한국타이어앤테크놀로지", symbol: "161390.KS", weight: 5.1 },
+      { name: "성우하이텍", symbol: "015750.KS", weight: 4.4 },
+      { name: "화신", symbol: "010690.KS", weight: 3.9 },
+      { name: "상신브레이크", symbol: "041650.KS", weight: 3.2 },
+      { name: "에스엘", symbol: "005850.KS", weight: 2.8 }
+    ],
+    sectors: [
+      { name: "완성차", weight: 44 },
+      { name: "부품", weight: 28 },
+      { name: "전장/전기차", weight: 14 },
+      { name: "타이어", weight: 7 },
+      { name: "기타", weight: 7 }
+    ],
+    countries: [{ name: "한국", weight: 100 }],
+    comparison: "개별 완성차보다 부품사를 함께 볼 수 있지만 환율, 미국 판매, 전기차 전환 속도에 민감합니다.",
+    risks: ["환율과 관세 이슈에 영향을 받습니다.", "전기차 수요 둔화에 민감할 수 있습니다.", "완성차 비중이 커서 특정 대형주 영향이 큽니다."]
+  },
+  energy: {
+    easyExplanation: "에너지 ETF는 정유, 석유·가스 생산, 에너지 인프라 기업을 담아 유가 흐름과 연결해 보는 상품입니다.",
+    holdings: [
+      { name: "Exxon Mobil", symbol: "XOM", weight: 22.4 },
+      { name: "Chevron", symbol: "CVX", weight: 17.8 },
+      { name: "ConocoPhillips", symbol: "COP", weight: 8.4 },
+      { name: "EOG Resources", symbol: "EOG", weight: 4.9 },
+      { name: "Schlumberger", symbol: "SLB", weight: 4.4 },
+      { name: "Marathon Petroleum", symbol: "MPC", weight: 4.1 },
+      { name: "Phillips 66", symbol: "PSX", weight: 3.8 },
+      { name: "Williams", symbol: "WMB", weight: 3.2 },
+      { name: "Kinder Morgan", symbol: "KMI", weight: 2.8 },
+      { name: "Valero Energy", symbol: "VLO", weight: 2.6 }
+    ],
+    sectors: [
+      { name: "석유/가스 생산", weight: 42 },
+      { name: "정유", weight: 22 },
+      { name: "에너지 장비", weight: 14 },
+      { name: "파이프라인", weight: 12 },
+      { name: "기타", weight: 10 }
+    ],
+    countries: [{ name: "미국", weight: 100 }],
+    comparison: "주식시장 성장주와 다른 유가 민감 자산으로 볼 수 있지만 원자재 가격 변동이 큽니다.",
+    risks: ["유가 급락 시 수익성이 흔들릴 수 있습니다.", "정책과 지정학 리스크에 민감합니다.", "배당이 있어도 주가 변동이 큽니다."]
+  },
+  reit: {
+    easyExplanation: "리츠 ETF는 상업용 부동산, 물류센터, 데이터센터, 임대형 자산에 분산 투자하는 상품입니다.",
+    holdings: [
+      { name: "Prologis", symbol: "PLD", weight: 7.5 },
+      { name: "American Tower", symbol: "AMT", weight: 6.8 },
+      { name: "Equinix", symbol: "EQIX", weight: 5.9 },
+      { name: "Welltower", symbol: "WELL", weight: 5.2 },
+      { name: "Simon Property", symbol: "SPG", weight: 4.4 },
+      { name: "Realty Income", symbol: "O", weight: 4.1 },
+      { name: "Digital Realty", symbol: "DLR", weight: 3.9 },
+      { name: "Public Storage", symbol: "PSA", weight: 3.6 },
+      { name: "AvalonBay", symbol: "AVB", weight: 3.0 },
+      { name: "VICI Properties", symbol: "VICI", weight: 2.8 }
+    ],
+    sectors: [
+      { name: "물류/산업 리츠", weight: 22 },
+      { name: "통신/데이터센터", weight: 21 },
+      { name: "헬스케어 리츠", weight: 13 },
+      { name: "상업시설", weight: 12 },
+      { name: "주거/기타", weight: 32 }
+    ],
+    countries: [{ name: "미국", weight: 100 }],
+    comparison: "채권과 주식의 중간 성격처럼 볼 수 있지만 금리와 부동산 공실률에 민감합니다.",
+    risks: ["금리 상승기에 부담이 커질 수 있습니다.", "상업용 부동산 침체에 주의해야 합니다.", "배당만 보고 접근하면 주가 변동을 놓칠 수 있습니다."]
+  }
+};
+
+function profileFor(symbol: string, name: string, character: Etf["character"], market: Etf["market"]) {
+  if (etfProfiles[symbol]) return etfProfiles[symbol];
+  if (name.includes("S&P500") || name.includes("S&P 500") || ["SPY", "IVV"].includes(symbol)) return profileTemplates.usBroad;
+  if (name.includes("나스닥") || name.includes("테크") || ["VGT", "XLK"].includes(symbol)) return profileTemplates.usTech;
+  if (["SOXX"].includes(symbol)) return profileTemplates.globalSemi;
+  if (name.includes("반도체")) return profileTemplates.koreaSemi;
+  if (name.includes("배당") || character === "배당형") return profileTemplates.dividend;
+  if (name.includes("로봇") || name.includes("자동화")) return profileTemplates.robot;
+  if (name.includes("2차전지") || name.includes("배터리")) return profileTemplates.battery;
+  if (name.includes("전력") || name.includes("인프라")) return profileTemplates.power;
+  if (name.includes("헬스") || name.includes("의료") || ["XLV"].includes(symbol)) return profileTemplates.healthcare;
+  if (name.includes("은행") || ["XLF"].includes(symbol)) return profileTemplates.bank;
+  if (name.includes("자동차")) return profileTemplates.auto;
+  if (name.includes("에너지") || ["XLE"].includes(symbol)) return profileTemplates.energy;
+  if (name.includes("리츠") || name.includes("부동산") || ["VNQ"].includes(symbol)) return profileTemplates.reit;
+  if (name.includes("채권") || ["TLT", "BND"].includes(symbol)) return profileTemplates.bond;
+  if (name.includes("금") || ["GLD", "IAU"].includes(symbol)) return profileTemplates.gold;
+  if (market === "US" && character === "지수형") return profileTemplates.usBroad;
+  return defaultProfile;
+}
+
+function makeMockPrice(symbol: string, market: Etf["market"]) {
+  const seed = [...symbol].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const base = market === "KR" ? 8000 + (seed % 42000) : 35 + (seed % 480);
+  const change = ((seed % 71) - 28) / 10;
+  const status = change > 2.5 ? "강한 상승" : change > 0.4 ? "상승" : change < -2.5 ? "조정" : change < -0.4 ? "약세" : "횡보";
+  return {
+    currentPrice: market === "KR" ? `현재가 흐름 ${base.toLocaleString("ko-KR")}원대` : `현재가 흐름 $${base.toLocaleString("en-US")}대`,
+    changeRate: `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`,
+    status
+  };
+}
+
+function makeMockChart(symbol: string) {
+  const seed = [...symbol].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return Array.from({ length: 10 }, (_, index) => {
+    const wave = Math.sin((seed + index * 13) / 10) * 5;
+    const drift = (seed % 17) - 8 + index * ((seed % 5) - 1) * 0.5;
+    return { label: `${index + 1}주`, value: Math.max(70, Math.min(130, Math.round(100 + wave + drift))) };
+  });
+}
+
 function makeEtf(symbol: string, name: string, market: "KR" | "US", issuer: string, character: Etf["character"], risk: Etf["risk"], oneLine: string): Etf {
   const isDividend = character === "배당형";
   const isTheme = character === "테마형";
-  const profile = etfProfiles[symbol] ?? defaultProfile;
+  const profile = profileFor(symbol, name, character, market);
+  const price = makeMockPrice(symbol, market);
   return {
     symbol,
     name,
     market,
     issuer,
     expenseRatio: market === "KR" ? "약 0.05%~0.45%" : "약 0.03%~0.35%",
-    recentReturn: isTheme ? "+8.4% / 최근 1개월 예시" : isDividend ? "+2.1% / 최근 1개월 예시" : "+4.3% / 최근 1개월 예시",
+    currentPrice: price.currentPrice,
+    changeRate: price.changeRate,
+    status: price.status,
+    recentReturn: isTheme ? "+8.4% / 최근 1개월 흐름" : isDividend ? "+2.1% / 최근 1개월 흐름" : "+4.3% / 최근 1개월 흐름",
     dividend: isDividend ? "배당 있음" : "상품별 상이",
     character,
     risk,
@@ -453,6 +709,7 @@ function makeEtf(symbol: string, name: string, market: "KR" | "US", issuer: stri
     holdings: profile.holdings,
     sectors: profile.sectors,
     countries: profile.countries,
+    chart: makeMockChart(symbol),
     comparison: profile.comparison,
     risks: profile.risks,
     news: [
@@ -478,6 +735,30 @@ export const etfs: Etf[] = [
   makeEtf("BOTZ", "BOTZ", "US", "Global X", "테마형", "높음", "로봇과 자동화 산업을 보는 테마 ETF입니다."),
   makeEtf("IHI", "IHI", "US", "iShares", "방어형", "중간", "미국 의료기기 기업을 담는 헬스케어 ETF입니다."),
   makeEtf("GLD", "GLD", "US", "State Street", "방어형", "중간", "금 가격 흐름을 따라가는 방어형 자산 ETF입니다.")
+  ,
+  makeEtf("379800.KS", "KODEX 미국S&P500TR", "KR", "삼성자산운용", "지수형", "낮음", "미국 S&P500 지수를 국내 상장 상품으로 보는 ETF입니다."),
+  makeEtf("379810.KS", "KODEX 미국나스닥100TR", "KR", "삼성자산운용", "성장형", "중간", "미국 나스닥100 기술 성장주를 국내에서 보는 ETF입니다."),
+  makeEtf("381170.KS", "TIGER 미국테크TOP10 INDXX", "KR", "미래에셋자산운용", "성장형", "중간", "미국 대형 기술주 10개에 집중하는 ETF입니다."),
+  makeEtf("305540.KS", "TIGER 2차전지테마", "KR", "미래에셋자산운용", "테마형", "높음", "국내 2차전지 밸류체인을 묶어 보는 ETF입니다."),
+  makeEtf("091180.KS", "KODEX 자동차", "KR", "삼성자산운용", "테마형", "중간", "국내 완성차와 자동차 부품 흐름을 보는 ETF입니다."),
+  makeEtf("091170.KS", "KODEX 은행", "KR", "삼성자산운용", "배당형", "중간", "국내 은행주와 금융지주를 묶어 보는 ETF입니다."),
+  makeEtf("266420.KS", "KODEX 헬스케어", "KR", "삼성자산운용", "테마형", "중간", "국내 제약·바이오·의료기기 흐름을 보는 ETF입니다."),
+  makeEtf("211900.KS", "KODEX 배당성장", "KR", "삼성자산운용", "배당형", "낮음", "배당 성장 성격의 국내 종목을 담는 ETF입니다."),
+  makeEtf("487230.KS", "KODEX AI전력핵심설비", "KR", "삼성자산운용", "테마형", "높음", "AI 데이터센터와 전력 인프라 흐름을 보는 테마 ETF입니다."),
+  makeEtf("481180.KS", "SOL 미국AI전력인프라", "KR", "신한자산운용", "테마형", "높음", "미국 AI 전력 인프라 관련 기업을 보는 ETF입니다."),
+  makeEtf("148070.KS", "KOSEF 국고채10년", "KR", "키움투자자산운용", "방어형", "낮음", "국내 장기 국채 흐름을 보는 채권 ETF입니다."),
+  makeEtf("SPY", "SPY", "US", "State Street", "지수형", "낮음", "미국 S&P500을 추종하는 대표 초대형 ETF입니다."),
+  makeEtf("IVV", "IVV", "US", "iShares", "지수형", "낮음", "미국 S&P500에 낮은 보수로 분산 투자하는 ETF입니다."),
+  makeEtf("VGT", "VGT", "US", "Vanguard", "성장형", "중간", "미국 정보기술 섹터에 집중하는 ETF입니다."),
+  makeEtf("XLK", "XLK", "US", "State Street", "성장형", "중간", "미국 기술주 섹터 흐름을 보는 ETF입니다."),
+  makeEtf("SOXX", "SOXX", "US", "iShares", "테마형", "중간", "미국 상장 반도체 기업을 묶어 보는 ETF입니다."),
+  makeEtf("XLV", "XLV", "US", "State Street", "방어형", "중간", "미국 헬스케어 섹터를 보는 ETF입니다."),
+  makeEtf("XLF", "XLF", "US", "State Street", "배당형", "중간", "미국 금융 섹터를 보는 ETF입니다."),
+  makeEtf("XLE", "XLE", "US", "State Street", "방어형", "중간", "미국 에너지 섹터와 유가 흐름을 보는 ETF입니다."),
+  makeEtf("VNQ", "VNQ", "US", "Vanguard", "배당형", "중간", "미국 리츠와 부동산 흐름을 보는 ETF입니다."),
+  makeEtf("TLT", "TLT", "US", "iShares", "방어형", "중간", "미국 장기 국채 흐름을 보는 ETF입니다."),
+  makeEtf("BND", "BND", "US", "Vanguard", "방어형", "낮음", "미국 채권시장 전체에 분산하는 ETF입니다."),
+  makeEtf("IAU", "IAU", "US", "iShares", "방어형", "중간", "금 가격 흐름을 낮은 보수로 보는 ETF입니다.")
 ];
 
 export function getEtf(symbol: string) {

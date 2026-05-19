@@ -29,6 +29,27 @@ export default async function EtfDetailPage({
       </header>
 
       <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-black text-black/45">시세 흐름</p>
+            <p className="mt-1 text-3xl font-black text-ink">{etf.currentPrice}</p>
+            <p className="mt-1 text-xs font-bold leading-5 text-black/42">제공처 기준으로 지연될 수 있어 실제 거래 전 증권사 앱에서 다시 확인하세요.</p>
+          </div>
+          <div className="text-right">
+            <p className={etf.changeRate.startsWith("-") ? "text-2xl font-black text-red-500" : "text-2xl font-black text-emerald-600"}>{etf.changeRate}</p>
+            <Badge tone={etf.status === "강한 상승" || etf.status === "상승" ? "green" : etf.status === "조정" || etf.status === "약세" ? "coral" : "yellow"}>{etf.status}</Badge>
+          </div>
+        </div>
+        <details className="mt-4 rounded-2xl bg-paper p-4">
+          <summary className="cursor-pointer text-sm font-black text-ink">차트 자세히 보기</summary>
+          <div className="mt-4">
+            <MiniChart rows={etf.chart} />
+            <p className="mt-3 text-xs font-bold leading-5 text-black/45">최근 10주 흐름을 100 기준으로 단순화해 보여줍니다. 방향을 이해하기 위한 보조 지표입니다.</p>
+          </div>
+        </details>
+      </section>
+
+      <section className="mt-5 rounded-3xl bg-white p-5 shadow-soft">
         <h2 className="text-xl font-black">쉬운 해석</h2>
         <p className="mt-2 text-base font-semibold leading-7 text-black/68">{etf.easyExplanation}</p>
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -113,5 +134,23 @@ function Chart({ title, rows }: { title: string; rows: Array<{ name: string; wei
         ))}
       </div>
     </section>
+  );
+}
+
+function MiniChart({ rows }: { rows: Array<{ label: string; value: number }> }) {
+  const max = Math.max(...rows.map((row) => row.value));
+  const min = Math.min(...rows.map((row) => row.value));
+  return (
+    <div className="flex h-36 items-end gap-2">
+      {rows.map((row) => {
+        const height = 24 + ((row.value - min) / Math.max(max - min, 1)) * 88;
+        return (
+          <div key={row.label} className="flex flex-1 flex-col items-center gap-2">
+            <div className="w-full rounded-t-xl bg-ink" style={{ height: `${height}px` }} />
+            <span className="text-[10px] font-black text-black/38">{row.label}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }

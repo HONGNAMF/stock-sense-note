@@ -15,7 +15,7 @@ export default function EtfListPage() {
       </header>
 
       {groups.map((group) => {
-        const list = etfs.filter((etf) => etf.character === group || (group === "국내 상장 ETF" && etf.market === "KR") || (group === "해외 ETF" && etf.market === "US")).slice(0, 6);
+        const list = etfs.filter((etf) => etf.character === group || (group === "국내 상장 ETF" && etf.market === "KR") || (group === "해외 ETF" && etf.market === "US")).slice(0, 12);
         if (!list.length) return null;
         return (
           <section key={group} className="mt-7">
@@ -31,6 +31,11 @@ export default function EtfListPage() {
                     <Badge tone={etf.risk === "높음" ? "coral" : etf.risk === "중간" ? "yellow" : "green"}>{etf.risk}</Badge>
                   </div>
                   <p className="mt-3 text-sm font-semibold leading-6 text-black/62">{etf.oneLine}</p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-black text-black/50">
+                    <span>{etf.currentPrice}</span>
+                    <span className={etf.changeRate.startsWith("-") ? "text-red-500" : "text-emerald-600"}>{etf.changeRate}</span>
+                    <span>{etf.status}</span>
+                  </div>
                 </Link>
               ))}
             </div>

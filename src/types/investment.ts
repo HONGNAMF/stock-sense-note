@@ -103,6 +103,9 @@ export type Etf = {
   market: "KR" | "US";
   issuer: string;
   expenseRatio: string;
+  currentPrice: string;
+  changeRate: string;
+  status: string;
   recentReturn: string;
   dividend: string;
   character: "안정형" | "성장형" | "테마형" | "배당형" | "방어형" | "지수형";
@@ -112,6 +115,7 @@ export type Etf = {
   holdings: Array<{ name: string; symbol: string; weight: number }>;
   sectors: Array<{ name: string; weight: number }>;
   countries: Array<{ name: string; weight: number }>;
+  chart: Array<{ label: string; value: number }>;
   comparison: string;
   risks: string[];
   news: Array<{ title: string; source: string; url: string; summary: string[]; sentiment: "긍정" | "중립" | "부정" }>;
